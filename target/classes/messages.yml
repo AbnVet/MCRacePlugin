@@ -86,9 +86,13 @@ error:
 # Help Messages
 help:
   header: "{prefix} <gold>BOCRacePlugin Commands:"
-  admin-commands: "  <aqua>Admin Commands:</aqua>"
-  player-commands: "  <aqua>Player Commands:</aqua>"
-  command-format: "    <yellow>{command}</yellow> - {description}"
+  singleplayer-header: "  <gold>Singleplayer Commands:</gold>"
+  multiplayer-header: "  <gold>Multiplayer Commands:</gold>"
+  global-header: "  <gold>Global Commands:</gold>"
+  command-format: "    <green>{command}</green> - {description}"
+  command-format-sp: "    <green>{command}</green> - {description}"
+  command-format-mp: "    <aqua>{command}</aqua> - {description}"
+  command-format-global: "    <yellow>{command}</yellow> - {description}"
   
   # Admin commands
   create: "Create a new race course"
