@@ -1,0 +1,13 @@
+D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\BOCRacePlugin.java
+D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\command\BOCRaceCommand.java
+D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\EventListener.java
+D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\model\Course.java
+D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\model\PlayerStats.java
+D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\model\RaceSession.java
+D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\model\SetupSession.java
+D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\placeholder\PlaceholderAPIExpansion.java
+D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\RaceManager.java
+D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\SetupManager.java
+D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\storage\StorageManager.java
+D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\util\ConfigUtil.java
+D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\util\MessageUtil.java

@@ -1,0 +1,56 @@
+name: BOCRacePlugin
+version: '${project.version}'
+main: com.bocrace.BOCRacePlugin
+api-version: '1.21'
+author: AbnVet
+description: A boat racing plugin for Minecraft 1.21.6
+website: https://github.com/AbnVet/MCRacePlugin
+depend: [PlaceholderAPI]
+
+commands:
+  bocrace:
+    description: Main command for BOCRacePlugin
+    usage: /<command> [help|reload|create|edit|delete|list|tp|info]
+    permission: bocrace.use
+    aliases: [br, race]
+
+permissions:
+  bocrace.*:
+    description: All BOCRacePlugin permissions
+    children:
+      bocrace.admin: true
+      bocrace.use: true
+  bocrace.admin:
+    description: Admin permissions for course management
+    children:
+      bocrace.create: true
+      bocrace.edit: true
+      bocrace.delete: true
+      bocrace.reload: true
+      bocrace.tp: true
+      bocrace.info: true
+      bocrace.list: true
+  bocrace.use:
+    description: Basic permission to use the plugin
+    default: true
+  bocrace.create:
+    description: Create new race courses
+    default: op
+  bocrace.edit:
+    description: Edit existing race courses
+    default: op
+  bocrace.delete:
+    description: Delete race courses
+    default: op
+  bocrace.reload:
+    description: Reload plugin configuration
+    default: op
+  bocrace.tp:
+    description: Teleport to race courses
+    default: op
+  bocrace.info:
+    description: View course information
+    default: op
+  bocrace.list:
+    description: List all race courses
+    default: op

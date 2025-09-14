@@ -1,0 +1,92 @@
+# BOCRacePlugin Configuration
+# Version: 1.0.0
+
+# General Settings
+general:
+  # Maximum number of players per multiplayer race
+  max-players-per-race: 10
+  
+  # Race timeout in seconds (0 = no timeout)
+  race-timeout: 300
+  
+  # Enable debug mode for development
+  debug: false
+
+# Messages Configuration
+messages:
+  # Message prefix for all plugin messages
+  prefix: "<gradient:#00ff00:#00ffff>BOCRace</gradient>"
+  
+  # Colors for different message types
+  colors:
+    success: "<green>"
+    error: "<red>"
+    warning: "<yellow>"
+    info: "<aqua>"
+    highlight: "<gold>"
+
+# Sound Configuration
+sounds:
+  # Sound when race starts
+  race-start: "ENTITY_EXPERIENCE_ORB_PICKUP"
+  
+  # Sound when player finishes race
+  race-finish: "ENTITY_PLAYER_LEVELUP"
+  
+  # Sound for button interactions
+  button-click: "UI_BUTTON_CLICK"
+  
+  # Sound for errors
+  error: "ENTITY_VILLAGER_NO"
+
+# Race Settings
+race:
+  # Enable singleplayer races
+  singleplayer-enabled: true
+  
+  # Enable multiplayer races
+  multiplayer-enabled: true
+  
+  # Minimum time between races for the same player (seconds)
+  cooldown: 5
+  
+  # Auto-cleanup boats after race ends (seconds)
+  boat-cleanup-delay: 30
+
+# Storage Settings
+storage:
+  # Storage type: yaml, mysql (mysql not implemented yet)
+  type: yaml
+  
+  # YAML file paths
+  yaml:
+    courses-file: "courses.yml"
+    stats-file: "stats.yml"
+  
+  # MySQL settings (for future implementation)
+  mysql:
+    host: "localhost"
+    port: 3306
+    database: "bocrace"
+    username: "root"
+    password: "password"
+    ssl: false
+
+# PlaceholderAPI Settings
+placeholderapi:
+  # Enable PlaceholderAPI integration
+  enabled: true
+  
+  # Cache duration for placeholders (seconds)
+  cache-duration: 30
+
+# Performance Settings
+performance:
+  # Maximum number of concurrent races
+  max-concurrent-races: 5
+  
+  # Tick rate for race updates (1 = every tick, 20 = every second)
+  update-tick-rate: 5
+  
+  # Enable async operations where possible
+  async-operations: true
