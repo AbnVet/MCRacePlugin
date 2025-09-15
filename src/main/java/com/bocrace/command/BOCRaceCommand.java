@@ -1,6 +1,8 @@
 package com.bocrace.command;
 
 import com.bocrace.BOCRacePlugin;
+import com.bocrace.model.Course;
+import com.bocrace.model.CourseType;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -67,23 +69,19 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         
         switch (action) {
             case "create":
-                sender.sendMessage("§eSingleplayer create not implemented yet.");
-                return true;
+                return handleSingleplayerCreate(sender, args);
             case "edit":
                 sender.sendMessage("§eSingleplayer edit not implemented yet.");
                 return true;
             case "delete":
-                sender.sendMessage("§eSingleplayer delete not implemented yet.");
-                return true;
+                return handleSingleplayerDelete(sender, args);
             case "list":
-                sender.sendMessage("§eSingleplayer list not implemented yet.");
-                return true;
+                return handleSingleplayerList(sender);
             case "tp":
                 sender.sendMessage("§eSingleplayer tp not implemented yet.");
                 return true;
             case "info":
-                sender.sendMessage("§eSingleplayer info not implemented yet.");
-                return true;
+                return handleSingleplayerInfo(sender, args);
             case "reload":
                 sender.sendMessage("§eSingleplayer reload not implemented yet.");
                 return true;
@@ -109,23 +107,19 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         
         switch (action) {
             case "create":
-                sender.sendMessage("§eMultiplayer create not implemented yet.");
-                return true;
+                return handleMultiplayerCreate(sender, args);
             case "edit":
                 sender.sendMessage("§eMultiplayer edit not implemented yet.");
                 return true;
             case "delete":
-                sender.sendMessage("§eMultiplayer delete not implemented yet.");
-                return true;
+                return handleMultiplayerDelete(sender, args);
             case "list":
-                sender.sendMessage("§eMultiplayer list not implemented yet.");
-                return true;
+                return handleMultiplayerList(sender);
             case "tp":
                 sender.sendMessage("§eMultiplayer tp not implemented yet.");
                 return true;
             case "info":
-                sender.sendMessage("§eMultiplayer info not implemented yet.");
-                return true;
+                return handleMultiplayerInfo(sender, args);
             case "reload":
                 sender.sendMessage("§eMultiplayer reload not implemented yet.");
                 return true;
@@ -220,8 +214,198 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
                     }
                 }
             }
+        } else if (args.length == 3) {
+            // Third argument - course names for commands that need them
+            String firstArg = args[0].toLowerCase();
+            String secondArg = args[1].toLowerCase();
+            
+            if (firstArg.equals("singleplayer")) {
+                if (secondArg.equals("delete") || secondArg.equals("info") || secondArg.equals("tp") || 
+                    secondArg.equals("stats") || secondArg.equals("recent")) {
+                    // Add singleplayer course names
+                    var courses = plugin.getStorageManager().getCoursesByType(CourseType.SINGLEPLAYER);
+                    for (Course course : courses) {
+                        if (course.getName().toLowerCase().startsWith(args[2].toLowerCase())) {
+                            completions.add(course.getName());
+                        }
+                    }
+                }
+            } else if (firstArg.equals("multiplayer")) {
+                if (secondArg.equals("delete") || secondArg.equals("info") || secondArg.equals("tp") || 
+                    secondArg.equals("stats") || secondArg.equals("recent")) {
+                    // Add multiplayer course names
+                    var courses = plugin.getStorageManager().getCoursesByType(CourseType.MULTIPLAYER);
+                    for (Course course : courses) {
+                        if (course.getName().toLowerCase().startsWith(args[2].toLowerCase())) {
+                            completions.add(course.getName());
+                        }
+                    }
+                }
+            }
         }
         
         return completions;
+    }
+    
+    // Singleplayer command handlers
+    private boolean handleSingleplayerCreate(CommandSender sender, String[] args) {
+        if (args.length < 3) {
+            sender.sendMessage("§cUsage: /bocrace singleplayer create <name>");
+            return true;
+        }
+        
+        String courseName = args[2];
+        
+        // Check if course already exists
+        if (plugin.getStorageManager().courseExists(courseName)) {
+            sender.sendMessage("§cCourse '" + courseName + "' already exists!");
+            return true;
+        }
+        
+        // Create new course
+        Course course = new Course(courseName, CourseType.SINGLEPLAYER, sender.getName());
+        plugin.getStorageManager().addCourse(course);
+        plugin.getStorageManager().saveCourse(course);
+        
+        sender.sendMessage("§aSingleplayer course '" + courseName + "' created successfully!");
+        return true;
+    }
+    
+    private boolean handleSingleplayerDelete(CommandSender sender, String[] args) {
+        if (args.length < 3) {
+            sender.sendMessage("§cUsage: /bocrace singleplayer delete <name>");
+            return true;
+        }
+        
+        String courseName = args[2];
+        Course course = plugin.getStorageManager().getCourse(courseName);
+        
+        if (course == null || course.getType() != CourseType.SINGLEPLAYER) {
+            sender.sendMessage("§cSingleplayer course '" + courseName + "' not found!");
+            return true;
+        }
+        
+        plugin.getStorageManager().removeCourse(courseName);
+        sender.sendMessage("§aSingleplayer course '" + courseName + "' deleted successfully!");
+        return true;
+    }
+    
+    private boolean handleSingleplayerList(CommandSender sender) {
+        var courses = plugin.getStorageManager().getCoursesByType(CourseType.SINGLEPLAYER);
+        
+        sender.sendMessage("§6=== Singleplayer Courses ===");
+        if (courses.isEmpty()) {
+            sender.sendMessage("§7No singleplayer courses found.");
+        } else {
+            for (Course course : courses) {
+                sender.sendMessage("§7- " + course.getName() + " [Prefix: " + course.getPrefixDisplay() + "]");
+            }
+        }
+        return true;
+    }
+    
+    private boolean handleSingleplayerInfo(CommandSender sender, String[] args) {
+        if (args.length < 3) {
+            sender.sendMessage("§cUsage: /bocrace singleplayer info <name>");
+            return true;
+        }
+        
+        String courseName = args[2];
+        Course course = plugin.getStorageManager().getCourse(courseName);
+        
+        if (course == null || course.getType() != CourseType.SINGLEPLAYER) {
+            sender.sendMessage("§cSingleplayer course '" + courseName + "' not found!");
+            return true;
+        }
+        
+        sender.sendMessage("§6=== Course Information ===");
+        sender.sendMessage("§7Name: §f" + course.getName());
+        sender.sendMessage("§7Type: §f" + course.getType());
+        sender.sendMessage("§7Prefix: §f" + course.getPrefixDisplay());
+        sender.sendMessage("§7Created by: §f" + course.getCreatedBy());
+        sender.sendMessage("§7Created on: §f" + course.getCreatedOn());
+        sender.sendMessage("§7Last edited: §f" + course.getLastEdited());
+        return true;
+    }
+    
+    // Multiplayer command handlers
+    private boolean handleMultiplayerCreate(CommandSender sender, String[] args) {
+        if (args.length < 3) {
+            sender.sendMessage("§cUsage: /bocrace multiplayer create <name>");
+            return true;
+        }
+        
+        String courseName = args[2];
+        
+        // Check if course already exists
+        if (plugin.getStorageManager().courseExists(courseName)) {
+            sender.sendMessage("§cCourse '" + courseName + "' already exists!");
+            return true;
+        }
+        
+        // Create new course
+        Course course = new Course(courseName, CourseType.MULTIPLAYER, sender.getName());
+        plugin.getStorageManager().addCourse(course);
+        plugin.getStorageManager().saveCourse(course);
+        
+        sender.sendMessage("§aMultiplayer course '" + courseName + "' created successfully!");
+        return true;
+    }
+    
+    private boolean handleMultiplayerDelete(CommandSender sender, String[] args) {
+        if (args.length < 3) {
+            sender.sendMessage("§cUsage: /bocrace multiplayer delete <name>");
+            return true;
+        }
+        
+        String courseName = args[2];
+        Course course = plugin.getStorageManager().getCourse(courseName);
+        
+        if (course == null || course.getType() != CourseType.MULTIPLAYER) {
+            sender.sendMessage("§cMultiplayer course '" + courseName + "' not found!");
+            return true;
+        }
+        
+        plugin.getStorageManager().removeCourse(courseName);
+        sender.sendMessage("§aMultiplayer course '" + courseName + "' deleted successfully!");
+        return true;
+    }
+    
+    private boolean handleMultiplayerList(CommandSender sender) {
+        var courses = plugin.getStorageManager().getCoursesByType(CourseType.MULTIPLAYER);
+        
+        sender.sendMessage("§6=== Multiplayer Courses ===");
+        if (courses.isEmpty()) {
+            sender.sendMessage("§7No multiplayer courses found.");
+        } else {
+            for (Course course : courses) {
+                sender.sendMessage("§7- " + course.getName() + " [Prefix: " + course.getPrefixDisplay() + "]");
+            }
+        }
+        return true;
+    }
+    
+    private boolean handleMultiplayerInfo(CommandSender sender, String[] args) {
+        if (args.length < 3) {
+            sender.sendMessage("§cUsage: /bocrace multiplayer info <name>");
+            return true;
+        }
+        
+        String courseName = args[2];
+        Course course = plugin.getStorageManager().getCourse(courseName);
+        
+        if (course == null || course.getType() != CourseType.MULTIPLAYER) {
+            sender.sendMessage("§cMultiplayer course '" + courseName + "' not found!");
+            return true;
+        }
+        
+        sender.sendMessage("§6=== Course Information ===");
+        sender.sendMessage("§7Name: §f" + course.getName());
+        sender.sendMessage("§7Type: §f" + course.getType());
+        sender.sendMessage("§7Prefix: §f" + course.getPrefixDisplay());
+        sender.sendMessage("§7Created by: §f" + course.getCreatedBy());
+        sender.sendMessage("§7Created on: §f" + course.getCreatedOn());
+        sender.sendMessage("§7Last edited: §f" + course.getLastEdited());
+        return true;
     }
 }
