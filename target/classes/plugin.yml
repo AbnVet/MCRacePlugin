@@ -1,123 +1,22 @@
 name: BOCRacePlugin
-version: '1.0.0'
+version: 1.0.0
 main: com.bocrace.BOCRacePlugin
-api-version: '1.21'
+api-version: 1.21
+description: A boat racing plugin for Minecraft Paper
 author: AbnVet
-description: A boat racing plugin for Minecraft 1.21.6
 website: https://github.com/AbnVet/MCRacePlugin
+
 depend: [PlaceholderAPI]
+softdepend: []
 
 commands:
   bocrace:
-    description: Root command for BOCRacePlugin
+    description: Main command for BOCRacePlugin
     usage: /bocrace help
-    permission: bocrace.use
     aliases: [brp]
+    permission: bocrace.use
 
 permissions:
-  bocrace.*:
-    description: All BOCRacePlugin permissions
-    children:
-      bocrace.singleplayer.*: true
-      bocrace.multiplayer.*: true
-      bocrace.reload: true
-      bocrace.help: true
   bocrace.use:
-    description: Basic permission to use the plugin
-    default: true
-  bocrace.help:
-    description: View help information
-    default: true
-  bocrace.reload:
-    description: Reload plugin configuration
-    default: op
-  bocrace.singleplayer.*:
-    description: All singleplayer permissions
-    children:
-      bocrace.singleplayer.create: true
-      bocrace.singleplayer.edit: true
-      bocrace.singleplayer.delete: true
-      bocrace.singleplayer.list: true
-      bocrace.singleplayer.tp: true
-      bocrace.singleplayer.info: true
-      bocrace.singleplayer.reload: true
-      bocrace.singleplayer.stats: true
-      bocrace.singleplayer.recent: true
-  bocrace.singleplayer.create:
-    description: Create singleplayer courses
-    default: op
-  bocrace.singleplayer.edit:
-    description: Edit singleplayer courses
-    default: op
-  bocrace.singleplayer.delete:
-    description: Delete singleplayer courses
-    default: op
-  bocrace.singleplayer.list:
-    description: List singleplayer courses
-    default: op
-  bocrace.singleplayer.tp:
-    description: Teleport to singleplayer courses
-    default: op
-  bocrace.singleplayer.info:
-    description: View singleplayer course information
-    default: op
-  bocrace.singleplayer.reload:
-    description: Reload singleplayer configuration
-    default: op
-  bocrace.singleplayer.stats:
-    description: View singleplayer statistics
-    default: true
-  bocrace.singleplayer.recent:
-    description: View recent singleplayer races
-    default: true
-  bocrace.multiplayer.*:
-    description: All multiplayer permissions
-    children:
-      bocrace.multiplayer.create: true
-      bocrace.multiplayer.edit: true
-      bocrace.multiplayer.delete: true
-      bocrace.multiplayer.list: true
-      bocrace.multiplayer.tp: true
-      bocrace.multiplayer.info: true
-      bocrace.multiplayer.reload: true
-      bocrace.multiplayer.join: true
-      bocrace.multiplayer.leave: true
-      bocrace.multiplayer.start: true
-      bocrace.multiplayer.stats: true
-      bocrace.multiplayer.recent: true
-  bocrace.multiplayer.create:
-    description: Create multiplayer courses
-    default: op
-  bocrace.multiplayer.edit:
-    description: Edit multiplayer courses
-    default: op
-  bocrace.multiplayer.delete:
-    description: Delete multiplayer courses
-    default: op
-  bocrace.multiplayer.list:
-    description: List multiplayer courses
-    default: op
-  bocrace.multiplayer.tp:
-    description: Teleport to multiplayer courses
-    default: op
-  bocrace.multiplayer.info:
-    description: View multiplayer course information
-    default: op
-  bocrace.multiplayer.reload:
-    description: Reload multiplayer configuration
-    default: op
-  bocrace.multiplayer.join:
-    description: Join multiplayer races
-    default: true
-  bocrace.multiplayer.leave:
-    description: Leave multiplayer races
-    default: true
-  bocrace.multiplayer.start:
-    description: Start multiplayer races
-    default: true
-  bocrace.multiplayer.stats:
-    description: View multiplayer statistics
-    default: true
-  bocrace.multiplayer.recent:
-    description: View recent multiplayer races
+    description: Allows use of BOCRacePlugin commands
     default: true
