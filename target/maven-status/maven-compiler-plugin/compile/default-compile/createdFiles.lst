@@ -1,3 +1,6 @@
-com\bocrace\BOCRacePlugin.class
+com\bocrace\model\CourseType.class
 com\bocrace\command\BOCRaceCommand.class
 com\bocrace\config\ConfigManager.class
+com\bocrace\storage\StorageManager.class
+com\bocrace\BOCRacePlugin.class
+com\bocrace\model\Course.class

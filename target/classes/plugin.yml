@@ -20,3 +20,9 @@ permissions:
   bocrace.use:
     description: Allows use of BOCRacePlugin commands
     default: true
+  bocrace.admin:
+    description: Allows admin commands like reload
+    default: op
+  bocrace.debug:
+    description: Allows debug commands (temporary)
+    default: op

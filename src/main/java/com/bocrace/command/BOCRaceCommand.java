@@ -40,6 +40,13 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
                 plugin.getConfigManager().reloadConfigs();
                 sender.sendMessage("§aConfigs reloaded successfully.");
                 return true;
+            case "debugcourses":
+                if (!sender.hasPermission("bocrace.debug")) {
+                    sender.sendMessage("§cYou don't have permission to use debug commands!");
+                    return true;
+                }
+                showDebugCourses(sender);
+                return true;
             case "singleplayer":
                 return handleSingleplayerCommand(sender, args);
             case "multiplayer":
@@ -167,13 +174,28 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("§e/bocrace reload §7- Reload plugin configuration");
     }
     
+    private void showDebugCourses(CommandSender sender) {
+        sender.sendMessage("§6=== Loaded Courses ===");
+        
+        var courses = plugin.getStorageManager().getAllCourses();
+        if (courses.isEmpty()) {
+            sender.sendMessage("§7No courses loaded.");
+            return;
+        }
+        
+        for (var course : courses) {
+            String prefixDisplay = course.getPrefixDisplay();
+            sender.sendMessage("§7- " + course.getDisplayName() + " [Prefix: " + prefixDisplay + "]");
+        }
+    }
+    
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         List<String> completions = new ArrayList<>();
         
         if (args.length == 1) {
-            // First level: singleplayer, multiplayer, help, reload
-            List<String> subCommands = Arrays.asList("singleplayer", "multiplayer", "help", "reload");
+            // First level: singleplayer, multiplayer, help, reload, debugcourses
+            List<String> subCommands = Arrays.asList("singleplayer", "multiplayer", "help", "reload", "debugcourses");
             for (String subCommand : subCommands) {
                 if (subCommand.toLowerCase().startsWith(args[0].toLowerCase())) {
                     completions.add(subCommand);
