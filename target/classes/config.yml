@@ -1,0 +1,22 @@
+# BOCRacePlugin Configuration
+# Race timeout in seconds
+race-timeout: 60
+
+# Maximum players per multiplayer race
+max-players: 10
+
+# Sound settings
+sounds:
+  start-ding: true
+  finish-fireworks: true
+
+# Color settings
+colors:
+  prefix: GOLD
+  broadcast: AQUA
+
+# Debug mode
+debug: false
+
+# Configuration version (for future updates)
+config-version: 1

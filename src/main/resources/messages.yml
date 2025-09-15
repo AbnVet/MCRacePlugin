@@ -1,0 +1,12 @@
+# BOCRacePlugin Messages
+# Only configurable messages - everything else is hardcoded
+
+# Plugin prefix for all messages
+prefix: "[BOCRace] "
+
+# Configurable messages
+messages:
+  course-created: "Course created successfully."
+  course-deleted: "Course deleted successfully."
+  course-not-found: "Error: Course not found."
+  multiplayer-start: "%player% is starting a multiplayer race! Visit NPC at spawn."

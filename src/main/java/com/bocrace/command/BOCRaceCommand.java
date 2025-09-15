@@ -1,5 +1,6 @@
 package com.bocrace.command;
 
+import com.bocrace.BOCRacePlugin;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -11,6 +12,12 @@ import java.util.Arrays;
 import java.util.List;
 
 public class BOCRaceCommand implements CommandExecutor, TabCompleter {
+    
+    private final BOCRacePlugin plugin;
+    
+    public BOCRaceCommand(BOCRacePlugin plugin) {
+        this.plugin = plugin;
+    }
     
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -30,7 +37,8 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
                     sender.sendMessage("§cYou don't have permission to reload the plugin!");
                     return true;
                 }
-                sender.sendMessage("§aReload not implemented yet.");
+                plugin.getConfigManager().reloadConfigs();
+                sender.sendMessage("§aConfigs reloaded successfully.");
                 return true;
             case "singleplayer":
                 return handleSingleplayerCommand(sender, args);

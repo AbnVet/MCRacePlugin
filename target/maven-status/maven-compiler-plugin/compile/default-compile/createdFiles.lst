@@ -1,2 +1,3 @@
 com\bocrace\BOCRacePlugin.class
 com\bocrace\command\BOCRaceCommand.class
+com\bocrace\config\ConfigManager.class
