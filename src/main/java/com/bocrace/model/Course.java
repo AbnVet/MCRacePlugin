@@ -30,6 +30,11 @@ public class Course {
     private Location spcourselobby;
     private Location spmainlobby;
     
+    // Usage tracking
+    private int usageCount;
+    private LocalDateTime lastUsed;
+    private String lastUsedBy;
+    
     
     // Default constructor
     public Course() {
@@ -144,10 +149,27 @@ public class Course {
     public Location getSpmainlobby() { return spmainlobby; }
     public void setSpmainlobby(Location spmainlobby) { this.spmainlobby = spmainlobby; }
     
+    // Usage tracking getters and setters
+    public int getUsageCount() { return usageCount; }
+    public void setUsageCount(int usageCount) { this.usageCount = usageCount; }
+    
+    public LocalDateTime getLastUsed() { return lastUsed; }
+    public void setLastUsed(LocalDateTime lastUsed) { this.lastUsed = lastUsed; }
+    
+    public String getLastUsedBy() { return lastUsedBy; }
+    public void setLastUsedBy(String lastUsedBy) { this.lastUsedBy = lastUsedBy; }
+    
     
     // Helper methods
     public void updateLastEdited() {
         this.lastEdited = LocalDateTime.now();
+    }
+    
+    public void recordUsage(String playerName) {
+        this.usageCount++;
+        this.lastUsed = LocalDateTime.now();
+        this.lastUsedBy = playerName;
+        updateLastEdited();
     }
     
     public String getDisplayName() {

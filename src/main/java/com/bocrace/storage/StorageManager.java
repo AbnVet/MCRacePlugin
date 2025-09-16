@@ -151,6 +151,13 @@ public class StorageManager {
             
         }
         
+        // Load usage tracking
+        course.setUsageCount(config.getInt("usageCount", 0));
+        if (config.contains("lastUsed")) {
+            course.setLastUsed(LocalDateTime.parse(config.getString("lastUsed")));
+        }
+        course.setLastUsedBy(config.getString("lastUsedBy"));
+        
         // Load data map
         Map<String, Object> data = new HashMap<>();
         if (config.contains("data") && config.isConfigurationSection("data")) {
@@ -206,6 +213,13 @@ public class StorageManager {
                 writeLocation(config, "spmainlobby", course.getSpmainlobby());
                 
             }
+            
+            // Save usage tracking
+            config.set("usageCount", course.getUsageCount());
+            if (course.getLastUsed() != null) {
+                config.set("lastUsed", course.getLastUsed().toString());
+            }
+            config.set("lastUsedBy", course.getLastUsedBy());
             
             // Save data map
             for (Map.Entry<String, Object> entry : course.getData().entrySet()) {

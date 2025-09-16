@@ -3,6 +3,7 @@ package com.bocrace.command;
 import com.bocrace.BOCRacePlugin;
 import com.bocrace.model.Course;
 import com.bocrace.model.CourseType;
+import com.bocrace.model.RaceRecord;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -87,6 +88,8 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
                 return handleSingleplayerStats(sender);
             case "recent":
                 return handleSingleplayerRecent(sender);
+            case "testdata":
+                return handleTestData(sender);
             default:
                 sender.sendMessage("§cUnknown singleplayer command. Use /bocrace help for available commands.");
                 return true;
@@ -595,6 +598,59 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("§7Note: Recent race history will be available once races are implemented.");
         
         plugin.getLogger().info("[DEBUG] Recent races displayed (placeholder)");
+        return true;
+    }
+    
+    private boolean handleTestData(CommandSender sender) {
+        plugin.debugLog("Test data command called - Player: " + sender.getName());
+        
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("§cThis command can only be used by players!");
+            return true;
+        }
+        
+        Player player = (Player) sender;
+        String playerName = player.getName();
+        
+        // Test saving race records
+        sender.sendMessage("§6=== Testing Data Structure ===");
+        
+        // Test 1: Save some mock race records
+        plugin.getRecordManager().saveRaceRecord(playerName, "TestCourse1", 45.2, CourseType.SINGLEPLAYER);
+        plugin.getRecordManager().saveRaceRecord(playerName, "TestCourse1", 42.1, CourseType.SINGLEPLAYER);
+        plugin.getRecordManager().saveRaceRecord(playerName, "TestCourse2", 38.7, CourseType.SINGLEPLAYER);
+        
+        sender.sendMessage("§a✓ Saved 3 test race records");
+        
+        // Test 2: Get top times for TestCourse1
+        List<RaceRecord> topTimes = plugin.getRecordManager().getTopTimes("TestCourse1", 5);
+        sender.sendMessage("§a✓ Retrieved " + topTimes.size() + " top times for TestCourse1");
+        
+        // Test 3: Get player recent races
+        List<RaceRecord> recentRaces = plugin.getRecordManager().getPlayerRecent(playerName, 5);
+        sender.sendMessage("§a✓ Retrieved " + recentRaces.size() + " recent races for " + playerName);
+        
+        // Test 4: Get player stats
+        int totalRaces = plugin.getRecordManager().getPlayerTotalRaces(playerName);
+        int spRaces = plugin.getRecordManager().getPlayerRacesByType(playerName, CourseType.SINGLEPLAYER);
+        sender.sendMessage("§a✓ Player stats - Total: " + totalRaces + ", SP: " + spRaces);
+        
+        // Test 5: Test course usage tracking
+        Course testCourse = plugin.getStorageManager().getCourse("Herewego1");
+        if (testCourse != null) {
+            testCourse.recordUsage(playerName);
+            plugin.getStorageManager().saveCourse(testCourse);
+            sender.sendMessage("§a✓ Recorded usage for course: " + testCourse.getName());
+            sender.sendMessage("§7  Usage count: " + testCourse.getUsageCount());
+            sender.sendMessage("§7  Last used by: " + testCourse.getLastUsedBy());
+        } else {
+            sender.sendMessage("§c✗ No course found to test usage tracking");
+        }
+        
+        sender.sendMessage("§6=== Test Complete ===");
+        sender.sendMessage("§7Check the plugin data folder for generated YAML files");
+        plugin.debugLog("Data structure test completed successfully");
+        
         return true;
     }
     

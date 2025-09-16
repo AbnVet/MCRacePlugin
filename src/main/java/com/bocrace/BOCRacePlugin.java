@@ -4,6 +4,8 @@ import com.bocrace.command.BOCRaceCommand;
 import com.bocrace.config.ConfigManager;
 import com.bocrace.listener.SetupListener;
 import com.bocrace.storage.StorageManager;
+import com.bocrace.storage.RecordManager;
+import com.bocrace.storage.YAMLRecordManager;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -16,6 +18,7 @@ public class BOCRacePlugin extends JavaPlugin {
     private static BOCRacePlugin instance;
     private ConfigManager configManager;
     private StorageManager storageManager;
+    private RecordManager recordManager;
     
     // Setup mode tracking
     private Map<UUID, SetupMode> playerSetupModes;
@@ -34,6 +37,9 @@ public class BOCRacePlugin extends JavaPlugin {
         // Load courses
         storageManager = new StorageManager(this);
         storageManager.loadCourses();
+        
+        // Initialize record manager
+        recordManager = new YAMLRecordManager(this);
         
         // Register the main command
         getCommand("bocrace").setExecutor(new BOCRaceCommand(this));
@@ -60,6 +66,10 @@ public class BOCRacePlugin extends JavaPlugin {
     
     public StorageManager getStorageManager() {
         return storageManager;
+    }
+    
+    public RecordManager getRecordManager() {
+        return recordManager;
     }
     
     // Setup mode management
