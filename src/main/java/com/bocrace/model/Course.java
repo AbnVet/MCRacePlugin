@@ -1,5 +1,6 @@
 package com.bocrace.model;
 
+import org.bukkit.Location;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,6 +14,10 @@ public class Course {
     private LocalDateTime createdOn;
     private LocalDateTime lastEdited;
     private Map<String, Object> data;
+    
+    // Singleplayer race components
+    private Location spstartbutton;
+    private Location spboatspawn;
     
     // Default constructor
     public Course() {
@@ -85,6 +90,23 @@ public class Course {
     
     public void setData(Map<String, Object> data) {
         this.data = data;
+    }
+    
+    // Singleplayer component getters and setters
+    public Location getSpstartbutton() {
+        return spstartbutton;
+    }
+    
+    public void setSpstartbutton(Location spstartbutton) {
+        this.spstartbutton = spstartbutton;
+    }
+    
+    public Location getSpboatspawn() {
+        return spboatspawn;
+    }
+    
+    public void setSpboatspawn(Location spboatspawn) {
+        this.spboatspawn = spboatspawn;
     }
     
     // Helper methods

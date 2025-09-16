@@ -3,6 +3,10 @@ package com.bocrace.storage;
 import com.bocrace.BOCRacePlugin;
 import com.bocrace.model.Course;
 import com.bocrace.model.CourseType;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -123,6 +127,18 @@ public class StorageManager {
             plugin.getLogger().warning("No lastEdited date for " + name + ", using createdOn");
         }
         
+        // Load singleplayer Location fields
+        if (type == CourseType.SINGLEPLAYER) {
+            World world = Bukkit.getWorld(config.getString("world", "world"));
+            if (world == null) {
+                plugin.getLogger().warning("Course '" + name + "' references unknown world, using default world");
+                world = Bukkit.getWorlds().get(0);
+            }
+            
+            course.setSpstartbutton(readLocation(config.getConfigurationSection("spstartbutton"), world));
+            course.setSpboatspawn(readLocation(config.getConfigurationSection("spboatspawn"), world));
+        }
+        
         // Load data map
         Map<String, Object> data = new HashMap<>();
         if (config.contains("data") && config.isConfigurationSection("data")) {
@@ -146,12 +162,25 @@ public class StorageManager {
             File file = new File(folder, course.getName() + ".yml");
             FileConfiguration config = new YamlConfiguration();
             
+            // DEBUG: Log course saving
+            plugin.getLogger().info("[DEBUG] Saving course: " + course.getName() + " (Type: " + course.getType() + ")");
+            
             config.set("name", course.getName());
             config.set("type", course.getType().toString());
             config.set("prefix", course.getPrefix());
             config.set("createdBy", course.getCreatedBy());
             config.set("createdOn", course.getCreatedOn().format(dateTimeFormatter));
             config.set("lastEdited", course.getLastEdited().format(dateTimeFormatter));
+            
+            // Save singleplayer Location fields
+            if (course.getType() == CourseType.SINGLEPLAYER) {
+                plugin.getLogger().info("[DEBUG] Saving singleplayer course - spstartbutton: " + 
+                    (course.getSpstartbutton() != null ? "SET" : "NULL") + 
+                    ", spboatspawn: " + (course.getSpboatspawn() != null ? "SET" : "NULL"));
+                
+                writeLocation(config, "spstartbutton", course.getSpstartbutton());
+                writeLocation(config, "spboatspawn", course.getSpboatspawn());
+            }
             
             // Save data map
             for (Map.Entry<String, Object> entry : course.getData().entrySet()) {
@@ -160,6 +189,7 @@ public class StorageManager {
             
             config.save(file);
             plugin.getLogger().info("Saved course: " + course.getDisplayName());
+            plugin.getLogger().info("[DEBUG] Course saved to: " + file.getAbsolutePath());
             
         } catch (IOException e) {
             plugin.getLogger().severe("Failed to save course " + course.getName() + ": " + e.getMessage());
@@ -193,6 +223,62 @@ public class StorageManager {
     }
     
     public void removeCourse(String name) {
+        Course course = courses.get(name);
+        if (course != null) {
+            // Delete the YAML file from disk
+            String folderName = course.getType() == CourseType.SINGLEPLAYER ? "singleplayer" : "multiplayer";
+            File folder = new File(plugin.getDataFolder(), folderName);
+            File file = new File(folder, course.getName() + ".yml");
+            
+            if (file.exists()) {
+                boolean deleted = file.delete();
+                plugin.getLogger().info("[DEBUG] Course file deletion: " + file.getName() + " - " + (deleted ? "SUCCESS" : "FAILED"));
+            } else {
+                plugin.getLogger().warning("[DEBUG] Course file not found for deletion: " + file.getAbsolutePath());
+            }
+        }
+        
+        // Remove from memory
         courses.remove(name);
+        plugin.getLogger().info("[DEBUG] Course removed from memory: " + name);
+    }
+    
+    // Helper methods for Location serialization
+    private Location readLocation(ConfigurationSection section, World defaultWorld) {
+        if (section == null) return null;
+        
+        World world = defaultWorld;
+        if (section.isString("world")) {
+            World maybe = Bukkit.getWorld(section.getString("world"));
+            if (maybe != null) world = maybe;
+        }
+        
+        int x = section.getInt("x", 0);
+        int y = section.getInt("y", 0);
+        int z = section.getInt("z", 0);
+        float yaw = (float) section.getDouble("yaw", 0.0);
+        float pitch = (float) section.getDouble("pitch", 0.0);
+        
+        return new Location(world, x + 0.5, y, z + 0.5, yaw, pitch);
+    }
+    
+    private void writeLocation(FileConfiguration config, String path, Location location) {
+        if (location == null) {
+            plugin.getLogger().info("[DEBUG] Writing NULL location for: " + path + " - field will not appear in YAML");
+            config.set(path, null);
+            return;
+        }
+        
+        plugin.getLogger().info("[DEBUG] Writing location for: " + path + " - World: " + 
+            (location.getWorld() != null ? location.getWorld().getName() : "NULL") + 
+            ", X: " + location.getBlockX() + ", Y: " + location.getBlockY() + 
+            ", Z: " + location.getBlockZ() + ", Yaw: " + location.getYaw());
+        
+        config.set(path + ".world", location.getWorld() != null ? location.getWorld().getName() : null);
+        config.set(path + ".x", location.getBlockX());
+        config.set(path + ".y", location.getBlockY());
+        config.set(path + ".z", location.getBlockZ());
+        config.set(path + ".yaw", location.getYaw());
+        config.set(path + ".pitch", location.getPitch());
     }
 }

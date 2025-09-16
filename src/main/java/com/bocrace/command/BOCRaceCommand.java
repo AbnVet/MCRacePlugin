@@ -256,18 +256,26 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         
         String courseName = args[2];
         
+        // DEBUG: Log command execution
+        plugin.getLogger().info("[DEBUG] Singleplayer create command - Player: " + sender.getName() + ", Course: " + courseName);
+        
         // Check if course already exists
         if (plugin.getStorageManager().courseExists(courseName)) {
             sender.sendMessage("§cCourse '" + courseName + "' already exists!");
+            plugin.getLogger().info("[DEBUG] Course creation failed - course already exists: " + courseName);
             return true;
         }
         
         // Create new course
         Course course = new Course(courseName, CourseType.SINGLEPLAYER, sender.getName());
+        plugin.getLogger().info("[DEBUG] Created course object - Name: " + course.getName() + 
+            ", Type: " + course.getType() + ", CreatedBy: " + course.getCreatedBy());
+        
         plugin.getStorageManager().addCourse(course);
         plugin.getStorageManager().saveCourse(course);
         
         sender.sendMessage("§aSingleplayer course '" + courseName + "' created successfully!");
+        plugin.getLogger().info("[DEBUG] Course creation completed successfully: " + courseName);
         return true;
     }
     
