@@ -1,6 +1,7 @@
 D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\BOCRacePlugin.java
 D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\command\BOCRaceCommand.java
 D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\config\ConfigManager.java
+D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\listener\SetupListener.java
 D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\model\Course.java
 D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\model\CourseType.java
 D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\storage\StorageManager.java

@@ -407,10 +407,12 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         plugin.getLogger().info("[DEBUG] Player location: " + player.getLocation().getWorld().getName() + 
             " " + player.getLocation().getBlockX() + "," + player.getLocation().getBlockY() + "," + player.getLocation().getBlockZ());
         
-        // TODO: Add right-click capture system
+        // Put player in setup mode
+        plugin.setPlayerSetupMode(player, course.getName(), "setstartbutton");
+        
         player.sendMessage("§eRight-click the start button for course '" + course.getName() + "'");
-        player.sendMessage("§7(This will be implemented with right-click capture)");
-        plugin.getLogger().info("[DEBUG] SetStartButton instruction sent to player");
+        player.sendMessage("§7You have 30 seconds to right-click a block!");
+        plugin.getLogger().info("[DEBUG] Player " + player.getName() + " entered setup mode for setstartbutton");
         return true;
     }
     
@@ -427,10 +429,12 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         plugin.getLogger().info("[DEBUG] Player location: " + player.getLocation().getWorld().getName() + 
             " " + player.getLocation().getBlockX() + "," + player.getLocation().getBlockY() + "," + player.getLocation().getBlockZ());
         
-        // TODO: Add right-click capture system
+        // Put player in setup mode
+        plugin.setPlayerSetupMode(player, course.getName(), "setboatspawn");
+        
         player.sendMessage("§eRight-click where boats should spawn for course '" + course.getName() + "'");
-        player.sendMessage("§7(This will be implemented with right-click capture)");
-        plugin.getLogger().info("[DEBUG] SetBoatSpawn instruction sent to player");
+        player.sendMessage("§7You have 30 seconds to right-click a block!");
+        plugin.getLogger().info("[DEBUG] Player " + player.getName() + " entered setup mode for setboatspawn");
         return true;
     }
     
