@@ -61,7 +61,7 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
     
     private boolean handleSingleplayerCommand(CommandSender sender, String[] args) {
         if (args.length < 2) {
-            sender.sendMessage("§cUsage: /bocrace singleplayer <create|edit|delete|list|tp|info|reload|stats|recent>");
+            sender.sendMessage("§cUsage: /bocrace singleplayer <create|setup|delete|list|tp|info|reload|stats|recent>");
             return true;
         }
         
@@ -70,9 +70,8 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         switch (action) {
             case "create":
                 return handleSingleplayerCreate(sender, args);
-            case "edit":
-                sender.sendMessage("§eSingleplayer edit not implemented yet.");
-                return true;
+            case "setup":
+                return handleSingleplayerSetup(sender, args);
             case "delete":
                 return handleSingleplayerDelete(sender, args);
             case "list":
@@ -141,7 +140,7 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         // Singleplayer Commands (Green)
         sender.sendMessage("§6Singleplayer Commands:");
         sender.sendMessage("§a/bocrace singleplayer create <name> §7- Create a new singleplayer course");
-        sender.sendMessage("§a/bocrace singleplayer edit <name> §7- Edit an existing singleplayer course");
+        sender.sendMessage("§a/bocrace singleplayer setup <name> §7- Setup course components (start button, boat spawn, etc.)");
         sender.sendMessage("§a/bocrace singleplayer delete <name> §7- Delete a singleplayer course");
         sender.sendMessage("§a/bocrace singleplayer list §7- List all singleplayer courses");
         sender.sendMessage("§a/bocrace singleplayer tp <name> §7- Teleport to a singleplayer course");
@@ -199,7 +198,7 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
             String firstArg = args[0].toLowerCase();
             if (firstArg.equals("singleplayer")) {
                 // Singleplayer subcommands
-                List<String> spCommands = Arrays.asList("create", "edit", "delete", "list", "tp", "info", "reload", "stats", "recent");
+                List<String> spCommands = Arrays.asList("create", "setup", "delete", "list", "tp", "info", "reload", "stats", "recent");
                 for (String spCommand : spCommands) {
                     if (spCommand.toLowerCase().startsWith(args[1].toLowerCase())) {
                         completions.add(spCommand);
@@ -221,7 +220,7 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
             
             if (firstArg.equals("singleplayer")) {
                 if (secondArg.equals("delete") || secondArg.equals("info") || secondArg.equals("tp") || 
-                    secondArg.equals("stats") || secondArg.equals("recent")) {
+                    secondArg.equals("stats") || secondArg.equals("recent") || secondArg.equals("setup")) {
                     // Add singleplayer course names
                     var courses = plugin.getStorageManager().getCoursesByType(CourseType.SINGLEPLAYER);
                     for (Course course : courses) {
@@ -239,6 +238,19 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
                         if (course.getName().toLowerCase().startsWith(args[2].toLowerCase())) {
                             completions.add(course.getName());
                         }
+                    }
+                }
+            }
+        } else if (args.length == 4) {
+            // Fourth argument - setup actions for singleplayer setup command
+            String firstArg = args[0].toLowerCase();
+            String secondArg = args[1].toLowerCase();
+            
+            if (firstArg.equals("singleplayer") && secondArg.equals("setup")) {
+                List<String> setupActions = Arrays.asList("setstartbutton", "setboatspawn");
+                for (String action : setupActions) {
+                    if (action.toLowerCase().startsWith(args[3].toLowerCase())) {
+                        completions.add(action);
                     }
                 }
             }
@@ -333,6 +345,92 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("§7Created by: §f" + course.getCreatedBy());
         sender.sendMessage("§7Created on: §f" + course.getCreatedOn());
         sender.sendMessage("§7Last edited: §f" + course.getLastEdited());
+        return true;
+    }
+    
+    private boolean handleSingleplayerSetup(CommandSender sender, String[] args) {
+        plugin.getLogger().info("[DEBUG] Setup command called - Player: " + sender.getName() + ", Args: " + java.util.Arrays.toString(args));
+        
+        if (args.length < 3) {
+            sender.sendMessage("§cUsage: /bocrace singleplayer setup <coursename>");
+            plugin.getLogger().info("[DEBUG] Setup command failed - insufficient arguments");
+            return true;
+        }
+        
+        String courseName = args[2];
+        plugin.getLogger().info("[DEBUG] Looking for course: " + courseName);
+        
+        Course course = plugin.getStorageManager().getCourse(courseName);
+        
+        if (course == null || course.getType() != CourseType.SINGLEPLAYER) {
+            sender.sendMessage("§cSingleplayer course '" + courseName + "' not found!");
+            plugin.getLogger().info("[DEBUG] Setup command failed - course not found: " + courseName);
+            return true;
+        }
+        
+        plugin.getLogger().info("[DEBUG] Course found - Name: " + course.getName() + ", Type: " + course.getType());
+        
+        if (args.length == 3) {
+            // Show setup options
+            sender.sendMessage("§6=== Setup Options for '" + courseName + "' ===");
+            sender.sendMessage("§a/bocrace singleplayer setup " + courseName + " setstartbutton §7- Set the start button location");
+            sender.sendMessage("§a/bocrace singleplayer setup " + courseName + " setboatspawn §7- Set the boat spawn location");
+            plugin.getLogger().info("[DEBUG] Setup options displayed for course: " + courseName);
+            return true;
+        }
+        
+        String setupAction = args[3].toLowerCase();
+        plugin.getLogger().info("[DEBUG] Setup action requested: " + setupAction);
+        
+        switch (setupAction) {
+            case "setstartbutton":
+                return handleSetStartButton(sender, course);
+            case "setboatspawn":
+                return handleSetBoatSpawn(sender, course);
+            default:
+                sender.sendMessage("§cUnknown setup action. Available: setstartbutton, setboatspawn");
+                plugin.getLogger().info("[DEBUG] Setup command failed - unknown action: " + setupAction);
+                return true;
+        }
+    }
+    
+    private boolean handleSetStartButton(CommandSender sender, Course course) {
+        plugin.getLogger().info("[DEBUG] SetStartButton called - Player: " + sender.getName() + ", Course: " + course.getName());
+        
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("§cThis command can only be used by players!");
+            plugin.getLogger().info("[DEBUG] SetStartButton failed - not a player");
+            return true;
+        }
+        
+        Player player = (Player) sender;
+        plugin.getLogger().info("[DEBUG] Player location: " + player.getLocation().getWorld().getName() + 
+            " " + player.getLocation().getBlockX() + "," + player.getLocation().getBlockY() + "," + player.getLocation().getBlockZ());
+        
+        // TODO: Add right-click capture system
+        player.sendMessage("§eRight-click the start button for course '" + course.getName() + "'");
+        player.sendMessage("§7(This will be implemented with right-click capture)");
+        plugin.getLogger().info("[DEBUG] SetStartButton instruction sent to player");
+        return true;
+    }
+    
+    private boolean handleSetBoatSpawn(CommandSender sender, Course course) {
+        plugin.getLogger().info("[DEBUG] SetBoatSpawn called - Player: " + sender.getName() + ", Course: " + course.getName());
+        
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("§cThis command can only be used by players!");
+            plugin.getLogger().info("[DEBUG] SetBoatSpawn failed - not a player");
+            return true;
+        }
+        
+        Player player = (Player) sender;
+        plugin.getLogger().info("[DEBUG] Player location: " + player.getLocation().getWorld().getName() + 
+            " " + player.getLocation().getBlockX() + "," + player.getLocation().getBlockY() + "," + player.getLocation().getBlockZ());
+        
+        // TODO: Add right-click capture system
+        player.sendMessage("§eRight-click where boats should spawn for course '" + course.getName() + "'");
+        player.sendMessage("§7(This will be implemented with right-click capture)");
+        plugin.getLogger().info("[DEBUG] SetBoatSpawn instruction sent to player");
         return true;
     }
     
