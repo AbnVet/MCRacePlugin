@@ -84,6 +84,13 @@ public class BOCRacePlugin extends JavaPlugin {
         return playerSetupModes.get(player.getUniqueId());
     }
     
+    // Debug logging helper
+    public void debugLog(String message) {
+        if (configManager.isDebugEnabled()) {
+            getLogger().info("[DEBUG] " + message);
+        }
+    }
+    
     // Setup mode data class
     public static class SetupMode {
         private final String courseName;

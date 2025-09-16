@@ -137,6 +137,18 @@ public class StorageManager {
             
             course.setSpstartbutton(readLocation(config.getConfigurationSection("spstartbutton"), world));
             course.setSpboatspawn(readLocation(config.getConfigurationSection("spboatspawn"), world));
+            
+            // Load race line locations
+            course.setSpstart1(readLocation(config.getConfigurationSection("spstart1"), world));
+            course.setSpstart2(readLocation(config.getConfigurationSection("spstart2"), world));
+            course.setSpfinish1(readLocation(config.getConfigurationSection("spfinish1"), world));
+            course.setSpfinish2(readLocation(config.getConfigurationSection("spfinish2"), world));
+            course.setSpreturn(readLocation(config.getConfigurationSection("spreturn"), world));
+            
+            // Load lobby locations
+            course.setSpcourselobby(readLocation(config.getConfigurationSection("spcourselobby"), world));
+            course.setSpmainlobby(readLocation(config.getConfigurationSection("spmainlobby"), world));
+            
         }
         
         // Load data map
@@ -178,8 +190,21 @@ public class StorageManager {
                     (course.getSpstartbutton() != null ? "SET" : "NULL") + 
                     ", spboatspawn: " + (course.getSpboatspawn() != null ? "SET" : "NULL"));
                 
+                // Save original locations
                 writeLocation(config, "spstartbutton", course.getSpstartbutton());
                 writeLocation(config, "spboatspawn", course.getSpboatspawn());
+                
+                // Save race line locations
+                writeLocation(config, "spstart1", course.getSpstart1());
+                writeLocation(config, "spstart2", course.getSpstart2());
+                writeLocation(config, "spfinish1", course.getSpfinish1());
+                writeLocation(config, "spfinish2", course.getSpfinish2());
+                writeLocation(config, "spreturn", course.getSpreturn());
+                
+                // Save lobby locations
+                writeLocation(config, "spcourselobby", course.getSpcourselobby());
+                writeLocation(config, "spmainlobby", course.getSpmainlobby());
+                
             }
             
             // Save data map

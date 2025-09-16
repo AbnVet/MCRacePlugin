@@ -19,6 +19,18 @@ public class Course {
     private Location spstartbutton;
     private Location spboatspawn;
     
+    // Race line locations
+    private Location spstart1;
+    private Location spstart2;
+    private Location spfinish1;
+    private Location spfinish2;
+    private Location spreturn;
+    
+    // Lobby locations
+    private Location spcourselobby;
+    private Location spmainlobby;
+    
+    
     // Default constructor
     public Course() {
         this.data = new HashMap<>();
@@ -108,6 +120,30 @@ public class Course {
     public void setSpboatspawn(Location spboatspawn) {
         this.spboatspawn = spboatspawn;
     }
+    
+    // Race line getters and setters
+    public Location getSpstart1() { return spstart1; }
+    public void setSpstart1(Location spstart1) { this.spstart1 = spstart1; }
+    
+    public Location getSpstart2() { return spstart2; }
+    public void setSpstart2(Location spstart2) { this.spstart2 = spstart2; }
+    
+    public Location getSpfinish1() { return spfinish1; }
+    public void setSpfinish1(Location spfinish1) { this.spfinish1 = spfinish1; }
+    
+    public Location getSpfinish2() { return spfinish2; }
+    public void setSpfinish2(Location spfinish2) { this.spfinish2 = spfinish2; }
+    
+    public Location getSpreturn() { return spreturn; }
+    public void setSpreturn(Location spreturn) { this.spreturn = spreturn; }
+    
+    // Lobby getters and setters
+    public Location getSpcourselobby() { return spcourselobby; }
+    public void setSpcourselobby(Location spcourselobby) { this.spcourselobby = spcourselobby; }
+    
+    public Location getSpmainlobby() { return spmainlobby; }
+    public void setSpmainlobby(Location spmainlobby) { this.spmainlobby = spmainlobby; }
+    
     
     // Helper methods
     public void updateLastEdited() {

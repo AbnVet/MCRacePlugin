@@ -244,10 +244,28 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
             String secondArg = args[1].toLowerCase();
             
             if (firstArg.equals("singleplayer") && secondArg.equals("setup")) {
-                List<String> setupActions = Arrays.asList("setstartbutton", "setboatspawn");
+                List<String> setupActions = Arrays.asList(
+                    "setstartbutton", "setboatspawn", "setstart", "setfinish", 
+                    "setreturn", "setcourselobby", "setmainlobby"
+                );
                 for (String action : setupActions) {
                     if (action.toLowerCase().startsWith(args[3].toLowerCase())) {
                         completions.add(action);
+                    }
+                }
+            }
+        } else if (args.length == 5) {
+            // Fifth argument - point numbers for setstart/setfinish
+            String firstArg = args[0].toLowerCase();
+            String secondArg = args[1].toLowerCase();
+            String thirdArg = args[3].toLowerCase();
+            
+            if (firstArg.equals("singleplayer") && secondArg.equals("setup") && 
+                (thirdArg.equals("setstart") || thirdArg.equals("setfinish"))) {
+                List<String> pointNumbers = Arrays.asList("1", "2");
+                for (String point : pointNumbers) {
+                    if (point.startsWith(args[4].toLowerCase())) {
+                        completions.add(point);
                     }
                 }
             }
@@ -266,12 +284,12 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         String courseName = args[2];
         
         // DEBUG: Log command execution
-        plugin.getLogger().info("[DEBUG] Singleplayer create command - Player: " + sender.getName() + ", Course: " + courseName);
+        plugin.debugLog("Singleplayer create command - Player: " + sender.getName() + ", Course: " + courseName);
         
         // Check if course already exists
         if (plugin.getStorageManager().courseExists(courseName)) {
             sender.sendMessage("§cCourse '" + courseName + "' already exists!");
-            plugin.getLogger().info("[DEBUG] Course creation failed - course already exists: " + courseName);
+            plugin.debugLog("Course creation failed - course already exists: " + courseName);
             return true;
         }
         
@@ -403,6 +421,11 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage("§6=== Setup Options for '" + courseName + "' ===");
             sender.sendMessage("§a/bocrace singleplayer setup " + courseName + " setstartbutton §7- Set the start button location");
             sender.sendMessage("§a/bocrace singleplayer setup " + courseName + " setboatspawn §7- Set the boat spawn location");
+            sender.sendMessage("§a/bocrace singleplayer setup " + courseName + " setstart <1|2> §7- Set start line points");
+            sender.sendMessage("§a/bocrace singleplayer setup " + courseName + " setfinish <1|2> §7- Set finish line points");
+            sender.sendMessage("§a/bocrace singleplayer setup " + courseName + " setreturn §7- Set return/restart location");
+            sender.sendMessage("§a/bocrace singleplayer setup " + courseName + " setcourselobby §7- Set course lobby location");
+            sender.sendMessage("§a/bocrace singleplayer setup " + courseName + " setmainlobby §7- Set main lobby location");
             plugin.getLogger().info("[DEBUG] Setup options displayed for course: " + courseName);
             return true;
         }
@@ -415,8 +438,18 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
                 return handleSetStartButton(sender, course);
             case "setboatspawn":
                 return handleSetBoatSpawn(sender, course);
+            case "setstart":
+                return handleSetStart(sender, args, course);
+            case "setfinish":
+                return handleSetFinish(sender, args, course);
+            case "setreturn":
+                return handleSetReturn(sender, course);
+            case "setcourselobby":
+                return handleSetCourseLobby(sender, course);
+            case "setmainlobby":
+                return handleSetMainLobby(sender, course);
             default:
-                sender.sendMessage("§cUnknown setup action. Available: setstartbutton, setboatspawn");
+                sender.sendMessage("§cUnknown setup action. Use /bocrace singleplayer setup " + courseName + " to see available options.");
                 plugin.getLogger().info("[DEBUG] Setup command failed - unknown action: " + setupAction);
                 return true;
         }
@@ -564,6 +597,128 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         plugin.getLogger().info("[DEBUG] Recent races displayed (placeholder)");
         return true;
     }
+    
+    // Additional setup command handlers
+    private boolean handleSetStart(CommandSender sender, String[] args, Course course) {
+        plugin.debugLog("SetStart called - Player: " + sender.getName() + ", Course: " + course.getName() + ", Args: " + java.util.Arrays.toString(args));
+        
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("§cThis command can only be used by players!");
+            plugin.debugLog("SetStart failed - not a player");
+            return true;
+        }
+        
+        if (args.length < 5) {
+            sender.sendMessage("§cUsage: /bocrace singleplayer setup " + course.getName() + " setstart <1|2>");
+            sender.sendMessage("§7Use 1 for first start line point, 2 for second start line point");
+            plugin.debugLog("SetStart failed - missing point number");
+            return true;
+        }
+        
+        String point = args[4];
+        if (!point.equals("1") && !point.equals("2")) {
+            sender.sendMessage("§cInvalid point number. Use 1 or 2");
+            plugin.debugLog("SetStart failed - invalid point: " + point);
+            return true;
+        }
+        
+        Player player = (Player) sender;
+        String action = "setstart" + point;
+        plugin.setPlayerSetupMode(player, course.getName(), action);
+        
+        player.sendMessage("§eRight-click start line point " + point + " for course '" + course.getName() + "'");
+        player.sendMessage("§7You have 30 seconds to right-click a block!");
+        plugin.debugLog("Player " + player.getName() + " entered setup mode for " + action);
+        return true;
+    }
+    
+    private boolean handleSetFinish(CommandSender sender, String[] args, Course course) {
+        plugin.debugLog("SetFinish called - Player: " + sender.getName() + ", Course: " + course.getName() + ", Args: " + java.util.Arrays.toString(args));
+        
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("§cThis command can only be used by players!");
+            plugin.debugLog("SetFinish failed - not a player");
+            return true;
+        }
+        
+        if (args.length < 5) {
+            sender.sendMessage("§cUsage: /bocrace singleplayer setup " + course.getName() + " setfinish <1|2>");
+            sender.sendMessage("§7Use 1 for first finish line point, 2 for second finish line point");
+            plugin.debugLog("SetFinish failed - missing point number");
+            return true;
+        }
+        
+        String point = args[4];
+        if (!point.equals("1") && !point.equals("2")) {
+            sender.sendMessage("§cInvalid point number. Use 1 or 2");
+            plugin.debugLog("SetFinish failed - invalid point: " + point);
+            return true;
+        }
+        
+        Player player = (Player) sender;
+        String action = "setfinish" + point;
+        plugin.setPlayerSetupMode(player, course.getName(), action);
+        
+        player.sendMessage("§eRight-click finish line point " + point + " for course '" + course.getName() + "'");
+        player.sendMessage("§7You have 30 seconds to right-click a block!");
+        plugin.debugLog("Player " + player.getName() + " entered setup mode for " + action);
+        return true;
+    }
+    
+    private boolean handleSetReturn(CommandSender sender, Course course) {
+        plugin.getLogger().info("[DEBUG] SetReturn called - Player: " + sender.getName() + ", Course: " + course.getName());
+        
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("§cThis command can only be used by players!");
+            plugin.getLogger().info("[DEBUG] SetReturn failed - not a player");
+            return true;
+        }
+        
+        Player player = (Player) sender;
+        plugin.setPlayerSetupMode(player, course.getName(), "setreturn");
+        
+        player.sendMessage("§eRight-click the return/restart location for course '" + course.getName() + "'");
+        player.sendMessage("§7You have 30 seconds to right-click a block!");
+        plugin.getLogger().info("[DEBUG] Player " + player.getName() + " entered setup mode for setreturn");
+        return true;
+    }
+    
+    private boolean handleSetCourseLobby(CommandSender sender, Course course) {
+        plugin.getLogger().info("[DEBUG] SetCourseLobby called - Player: " + sender.getName() + ", Course: " + course.getName());
+        
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("§cThis command can only be used by players!");
+            plugin.getLogger().info("[DEBUG] SetCourseLobby failed - not a player");
+            return true;
+        }
+        
+        Player player = (Player) sender;
+        plugin.setPlayerSetupMode(player, course.getName(), "setcourselobby");
+        
+        player.sendMessage("§eRight-click the course lobby location for course '" + course.getName() + "'");
+        player.sendMessage("§7You have 30 seconds to right-click a block!");
+        plugin.getLogger().info("[DEBUG] Player " + player.getName() + " entered setup mode for setcourselobby");
+        return true;
+    }
+    
+    private boolean handleSetMainLobby(CommandSender sender, Course course) {
+        plugin.getLogger().info("[DEBUG] SetMainLobby called - Player: " + sender.getName() + ", Course: " + course.getName());
+        
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("§cThis command can only be used by players!");
+            plugin.getLogger().info("[DEBUG] SetMainLobby failed - not a player");
+            return true;
+        }
+        
+        Player player = (Player) sender;
+        plugin.setPlayerSetupMode(player, course.getName(), "setmainlobby");
+        
+        player.sendMessage("§eRight-click the main lobby location for course '" + course.getName() + "'");
+        player.sendMessage("§7You have 30 seconds to right-click a block!");
+        plugin.getLogger().info("[DEBUG] Player " + player.getName() + " entered setup mode for setmainlobby");
+        return true;
+    }
+    
     
     // Multiplayer command handlers
     private boolean handleMultiplayerCreate(CommandSender sender, String[] args) {

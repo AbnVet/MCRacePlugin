@@ -83,6 +83,56 @@ public class SetupListener implements Listener {
                 plugin.getLogger().info("[DEBUG] Boat spawn location set: " + location.toString());
                 break;
                 
+            case "setstart1":
+                course.setSpstart1(location);
+                success = true;
+                player.sendMessage("§aStart line point 1 set for course '" + courseName + "'!");
+                plugin.getLogger().info("[DEBUG] Start line point 1 set: " + location.toString());
+                break;
+                
+            case "setstart2":
+                course.setSpstart2(location);
+                success = true;
+                player.sendMessage("§aStart line point 2 set for course '" + courseName + "'!");
+                plugin.getLogger().info("[DEBUG] Start line point 2 set: " + location.toString());
+                break;
+                
+            case "setfinish1":
+                course.setSpfinish1(location);
+                success = true;
+                player.sendMessage("§aFinish line point 1 set for course '" + courseName + "'!");
+                plugin.getLogger().info("[DEBUG] Finish line point 1 set: " + location.toString());
+                break;
+                
+            case "setfinish2":
+                course.setSpfinish2(location);
+                success = true;
+                player.sendMessage("§aFinish line point 2 set for course '" + courseName + "'!");
+                plugin.getLogger().info("[DEBUG] Finish line point 2 set: " + location.toString());
+                break;
+                
+            case "setreturn":
+                course.setSpreturn(location);
+                success = true;
+                player.sendMessage("§aReturn location set for course '" + courseName + "'!");
+                plugin.getLogger().info("[DEBUG] Return location set: " + location.toString());
+                break;
+                
+            case "setcourselobby":
+                course.setSpcourselobby(location);
+                success = true;
+                player.sendMessage("§aCourse lobby location set for course '" + courseName + "'!");
+                plugin.getLogger().info("[DEBUG] Course lobby location set: " + location.toString());
+                break;
+                
+            case "setmainlobby":
+                course.setSpmainlobby(location);
+                success = true;
+                player.sendMessage("§aMain lobby location set for course '" + courseName + "'!");
+                plugin.getLogger().info("[DEBUG] Main lobby location set: " + location.toString());
+                break;
+                
+                
             default:
                 player.sendMessage("§cUnknown setup action: " + action);
                 plugin.getLogger().info("[DEBUG] Unknown setup action: " + action);

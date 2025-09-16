@@ -100,16 +100,16 @@ public class ConfigManager {
         return config.getBoolean("sounds.finish-fireworks", true);
     }
     
+    public boolean isDebugEnabled() {
+        return config.getBoolean("debug", false);
+    }
+    
     public String getPrefixColor() {
         return config.getString("colors.prefix", "GOLD");
     }
     
     public String getBroadcastColor() {
         return config.getString("colors.broadcast", "AQUA");
-    }
-    
-    public boolean isDebugEnabled() {
-        return config.getBoolean("debug", false);
     }
     
     // Getters for messages
