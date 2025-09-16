@@ -3,6 +3,7 @@ package com.bocrace.command;
 import com.bocrace.BOCRacePlugin;
 import com.bocrace.model.Course;
 import com.bocrace.model.CourseType;
+import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -77,19 +78,15 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
             case "list":
                 return handleSingleplayerList(sender);
             case "tp":
-                sender.sendMessage("§eSingleplayer tp not implemented yet.");
-                return true;
+                return handleSingleplayerTp(sender, args);
             case "info":
                 return handleSingleplayerInfo(sender, args);
             case "reload":
-                sender.sendMessage("§eSingleplayer reload not implemented yet.");
-                return true;
+                return handleSingleplayerReload(sender);
             case "stats":
-                sender.sendMessage("§eSingleplayer stats not implemented yet.");
-                return true;
+                return handleSingleplayerStats(sender);
             case "recent":
-                sender.sendMessage("§eSingleplayer recent not implemented yet.");
-                return true;
+                return handleSingleplayerRecent(sender);
             default:
                 sender.sendMessage("§cUnknown singleplayer command. Use /bocrace help for available commands.");
                 return true;
@@ -292,51 +289,73 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
     }
     
     private boolean handleSingleplayerDelete(CommandSender sender, String[] args) {
+        plugin.getLogger().info("[DEBUG] Singleplayer delete command called - Player: " + sender.getName() + ", Args: " + java.util.Arrays.toString(args));
+        
         if (args.length < 3) {
             sender.sendMessage("§cUsage: /bocrace singleplayer delete <name>");
+            plugin.getLogger().info("[DEBUG] Delete command failed - insufficient arguments");
             return true;
         }
         
         String courseName = args[2];
+        plugin.getLogger().info("[DEBUG] Looking for course to delete: " + courseName);
+        
         Course course = plugin.getStorageManager().getCourse(courseName);
         
         if (course == null || course.getType() != CourseType.SINGLEPLAYER) {
             sender.sendMessage("§cSingleplayer course '" + courseName + "' not found!");
+            plugin.getLogger().info("[DEBUG] Delete command failed - course not found or wrong type: " + courseName);
             return true;
         }
         
+        plugin.getLogger().info("[DEBUG] Course found for deletion - Name: " + course.getName() + ", Type: " + course.getType());
         plugin.getStorageManager().removeCourse(courseName);
         sender.sendMessage("§aSingleplayer course '" + courseName + "' deleted successfully!");
+        plugin.getLogger().info("[DEBUG] Course deleted successfully: " + courseName);
         return true;
     }
     
     private boolean handleSingleplayerList(CommandSender sender) {
+        plugin.getLogger().info("[DEBUG] Singleplayer list command called - Player: " + sender.getName());
+        
         var courses = plugin.getStorageManager().getCoursesByType(CourseType.SINGLEPLAYER);
+        plugin.getLogger().info("[DEBUG] Found " + courses.size() + " singleplayer courses");
         
         sender.sendMessage("§6=== Singleplayer Courses ===");
         if (courses.isEmpty()) {
             sender.sendMessage("§7No singleplayer courses found.");
+            plugin.getLogger().info("[DEBUG] No singleplayer courses to display");
         } else {
             for (Course course : courses) {
                 sender.sendMessage("§7- " + course.getName() + " [Prefix: " + course.getPrefixDisplay() + "]");
+                plugin.getLogger().info("[DEBUG] Displaying course: " + course.getName() + " (Type: " + course.getType() + ")");
             }
         }
+        plugin.getLogger().info("[DEBUG] List command completed successfully");
         return true;
     }
     
     private boolean handleSingleplayerInfo(CommandSender sender, String[] args) {
+        plugin.getLogger().info("[DEBUG] Singleplayer info command called - Player: " + sender.getName() + ", Args: " + java.util.Arrays.toString(args));
+        
         if (args.length < 3) {
             sender.sendMessage("§cUsage: /bocrace singleplayer info <name>");
+            plugin.getLogger().info("[DEBUG] Info command failed - insufficient arguments");
             return true;
         }
         
         String courseName = args[2];
+        plugin.getLogger().info("[DEBUG] Looking for course info: " + courseName);
+        
         Course course = plugin.getStorageManager().getCourse(courseName);
         
         if (course == null || course.getType() != CourseType.SINGLEPLAYER) {
             sender.sendMessage("§cSingleplayer course '" + courseName + "' not found!");
+            plugin.getLogger().info("[DEBUG] Info command failed - course not found or wrong type: " + courseName);
             return true;
         }
+        
+        plugin.getLogger().info("[DEBUG] Course found for info display - Name: " + course.getName() + ", Type: " + course.getType());
         
         sender.sendMessage("§6=== Course Information ===");
         sender.sendMessage("§7Name: §f" + course.getName());
@@ -345,6 +364,15 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("§7Created by: §f" + course.getCreatedBy());
         sender.sendMessage("§7Created on: §f" + course.getCreatedOn());
         sender.sendMessage("§7Last edited: §f" + course.getLastEdited());
+        
+        // Show setup status
+        sender.sendMessage("§7Setup Status:");
+        sender.sendMessage("§7- Start Button: " + (course.getSpstartbutton() != null ? "§aSET" : "§cNOT SET"));
+        sender.sendMessage("§7- Boat Spawn: " + (course.getSpboatspawn() != null ? "§aSET" : "§cNOT SET"));
+        
+        plugin.getLogger().info("[DEBUG] Course info displayed - Start Button: " + 
+            (course.getSpstartbutton() != null ? "SET" : "NOT SET") + 
+            ", Boat Spawn: " + (course.getSpboatspawn() != null ? "SET" : "NOT SET"));
         return true;
     }
     
@@ -435,6 +463,105 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("§eRight-click where boats should spawn for course '" + course.getName() + "'");
         player.sendMessage("§7You have 30 seconds to right-click a block!");
         plugin.getLogger().info("[DEBUG] Player " + player.getName() + " entered setup mode for setboatspawn");
+        return true;
+    }
+    
+    private boolean handleSingleplayerTp(CommandSender sender, String[] args) {
+        plugin.getLogger().info("[DEBUG] Singleplayer tp command called - Player: " + sender.getName() + ", Args: " + java.util.Arrays.toString(args));
+        
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("§cThis command can only be used by players!");
+            plugin.getLogger().info("[DEBUG] Tp command failed - not a player");
+            return true;
+        }
+        
+        if (args.length < 3) {
+            sender.sendMessage("§cUsage: /bocrace singleplayer tp <coursename>");
+            plugin.getLogger().info("[DEBUG] Tp command failed - insufficient arguments");
+            return true;
+        }
+        
+        String courseName = args[2];
+        plugin.getLogger().info("[DEBUG] Looking for course to teleport to: " + courseName);
+        
+        Course course = plugin.getStorageManager().getCourse(courseName);
+        
+        if (course == null || course.getType() != CourseType.SINGLEPLAYER) {
+            sender.sendMessage("§cSingleplayer course '" + courseName + "' not found!");
+            plugin.getLogger().info("[DEBUG] Tp command failed - course not found or wrong type: " + courseName);
+            return true;
+        }
+        
+        Player player = (Player) sender;
+        
+        // Try to teleport to start button first, then boat spawn
+        Location teleportLocation = null;
+        if (course.getSpstartbutton() != null) {
+            teleportLocation = course.getSpstartbutton();
+            plugin.getLogger().info("[DEBUG] Teleporting to start button location");
+        } else if (course.getSpboatspawn() != null) {
+            teleportLocation = course.getSpboatspawn();
+            plugin.getLogger().info("[DEBUG] Teleporting to boat spawn location (no start button)");
+        } else {
+            sender.sendMessage("§cCourse '" + courseName + "' has no setup locations! Please set up the course first.");
+            plugin.getLogger().info("[DEBUG] Tp command failed - no setup locations for course: " + courseName);
+            return true;
+        }
+        
+        player.teleport(teleportLocation);
+        sender.sendMessage("§aTeleported to course '" + courseName + "'!");
+        plugin.getLogger().info("[DEBUG] Player teleported to course: " + courseName + " at location: " + teleportLocation.toString());
+        return true;
+    }
+    
+    private boolean handleSingleplayerReload(CommandSender sender) {
+        plugin.getLogger().info("[DEBUG] Singleplayer reload command called - Player: " + sender.getName());
+        
+        try {
+            plugin.getConfigManager().loadConfigs();
+            plugin.getStorageManager().loadCourses();
+            sender.sendMessage("§aPlugin configuration and courses reloaded successfully!");
+            plugin.getLogger().info("[DEBUG] Reload completed successfully");
+        } catch (Exception e) {
+            sender.sendMessage("§cFailed to reload configuration: " + e.getMessage());
+            plugin.getLogger().severe("[DEBUG] Reload failed: " + e.getMessage());
+        }
+        return true;
+    }
+    
+    private boolean handleSingleplayerStats(CommandSender sender) {
+        plugin.getLogger().info("[DEBUG] Singleplayer stats command called - Player: " + sender.getName());
+        
+        var courses = plugin.getStorageManager().getCoursesByType(CourseType.SINGLEPLAYER);
+        
+        sender.sendMessage("§6=== Singleplayer Race Statistics ===");
+        sender.sendMessage("§7Total Courses: §f" + courses.size());
+        
+        int setupComplete = 0;
+        for (Course course : courses) {
+            if (course.getSpstartbutton() != null && course.getSpboatspawn() != null) {
+                setupComplete++;
+            }
+        }
+        
+        sender.sendMessage("§7Fully Setup Courses: §f" + setupComplete);
+        sender.sendMessage("§7Incomplete Setup: §f" + (courses.size() - setupComplete));
+        sender.sendMessage("§7");
+        sender.sendMessage("§7Note: Race statistics will be available once races are implemented.");
+        
+        plugin.getLogger().info("[DEBUG] Stats displayed - Total: " + courses.size() + ", Complete: " + setupComplete);
+        return true;
+    }
+    
+    private boolean handleSingleplayerRecent(CommandSender sender) {
+        plugin.getLogger().info("[DEBUG] Singleplayer recent command called - Player: " + sender.getName());
+        
+        sender.sendMessage("§6=== Recent Singleplayer Races ===");
+        sender.sendMessage("§7No recent races found.");
+        sender.sendMessage("§7");
+        sender.sendMessage("§7Note: Recent race history will be available once races are implemented.");
+        
+        plugin.getLogger().info("[DEBUG] Recent races displayed (placeholder)");
         return true;
     }
     
