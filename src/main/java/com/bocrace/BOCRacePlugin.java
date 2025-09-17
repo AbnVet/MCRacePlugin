@@ -5,6 +5,7 @@ import com.bocrace.command.RaceStatsCommand;
 import com.bocrace.config.ConfigManager;
 import com.bocrace.listener.SetupListener;
 import com.bocrace.storage.StorageManager;
+import com.bocrace.race.RaceManager;
 import com.bocrace.storage.RecordManager;
 import com.bocrace.storage.YAMLRecordManager;
 import org.bukkit.entity.Player;
@@ -15,11 +16,12 @@ import java.util.Map;
 import java.util.UUID;
 
 public class BOCRacePlugin extends JavaPlugin {
-    
+
     private static BOCRacePlugin instance;
     private ConfigManager configManager;
     private StorageManager storageManager;
     private RecordManager recordManager;
+    private RaceManager raceManager;
     
     // Setup mode tracking
     private Map<UUID, SetupMode> playerSetupModes;
@@ -42,6 +44,10 @@ public class BOCRacePlugin extends JavaPlugin {
         // Initialize record manager
         recordManager = new YAMLRecordManager(this);
         
+        // Initialize race manager
+        raceManager = new RaceManager(this);
+        debugLog("Race manager initialized successfully");
+
         // Register the main command
         getCommand("bocrace").setExecutor(new BOCRaceCommand(this));
         getCommand("bocrace").setTabCompleter(new BOCRaceCommand(this));
@@ -75,6 +81,10 @@ public class BOCRacePlugin extends JavaPlugin {
     
     public RecordManager getRecordManager() {
         return recordManager;
+    }
+    
+    public RaceManager getRaceManager() {
+        return raceManager;
     }
     
     // Setup mode management

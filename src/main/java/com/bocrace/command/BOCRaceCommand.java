@@ -63,7 +63,7 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
     
     private boolean handleSingleplayerCommand(CommandSender sender, String[] args) {
         if (args.length < 2) {
-            sender.sendMessage("§cUsage: /bocrace singleplayer <create|setup|delete|list|tp|info|reload|testdata>");
+            sender.sendMessage("§cUsage: /bocrace singleplayer <create|setup|delete|list|tp|info|reload|testdata|racedebug>");
             return true;
         }
         
@@ -86,6 +86,8 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
                 return handleSingleplayerReload(sender);
             case "testdata":
                 return handleTestData(sender);
+            case "racedebug":
+                return handleRaceDebug(sender);
             default:
                 sender.sendMessage("§cUnknown singleplayer command. Use /bocrace help for available commands.");
                 return true;
@@ -199,7 +201,7 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
             String firstArg = args[0].toLowerCase();
             if (firstArg.equals("singleplayer")) {
                 // Singleplayer subcommands
-                List<String> spCommands = Arrays.asList("create", "setup", "delete", "list", "tp", "info", "reload", "testdata");
+                List<String> spCommands = Arrays.asList("create", "setup", "delete", "list", "tp", "info", "reload", "testdata", "racedebug");
                 for (String spCommand : spCommands) {
                     if (spCommand.toLowerCase().startsWith(args[1].toLowerCase())) {
                         completions.add(spCommand);
@@ -660,6 +662,51 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("§7  data/multiplayer/ (ready for future)");
         plugin.debugLog("New data structure test completed successfully");
         
+        return true;
+    }
+    
+    private boolean handleRaceDebug(CommandSender sender) {
+        if (!sender.hasPermission("bocrace.admin")) {
+            sender.sendMessage("§cYou don't have permission to use debug commands!");
+            return true;
+        }
+        
+        sender.sendMessage("§6=== Race Manager Debug Info ===");
+        
+        // Test RaceManager initialization
+        if (plugin.getRaceManager() == null) {
+            sender.sendMessage("§c✗ RaceManager is NULL - CRITICAL ERROR!");
+            return true;
+        }
+        
+        sender.sendMessage("§a✓ RaceManager initialized successfully");
+        
+        // Show race statistics
+        String stats = plugin.getRaceManager().getStats();
+        sender.sendMessage("§7" + stats);
+        
+        // Test course validation
+        var courses = plugin.getStorageManager().getCoursesByType(com.bocrace.model.CourseType.SINGLEPLAYER);
+        sender.sendMessage("§7Testing course validation for " + courses.size() + " singleplayer courses:");
+        
+        for (var course : courses) {
+            boolean isReady = plugin.getRaceManager().isRaceReady(course);
+            String status = isReady ? "§a✓ READY" : "§c✗ NOT READY";
+            sender.sendMessage("§7- " + course.getName() + ": " + status);
+            
+            if (!isReady) {
+                // Show what's missing
+                StringBuilder missing = new StringBuilder("§7  Missing: ");
+                if (course.getSpstartbutton() == null) missing.append("startbutton ");
+                if (course.getSpboatspawn() == null) missing.append("boatspawn ");
+                if (course.getSpstart1() == null || course.getSpstart2() == null) missing.append("startline ");
+                if (course.getSpfinish1() == null || course.getSpfinish2() == null) missing.append("finishline ");
+                if (course.getSpcourselobby() == null) missing.append("courselobby ");
+                sender.sendMessage(missing.toString());
+            }
+        }
+        
+        sender.sendMessage("§6=== Debug Complete ===");
         return true;
     }
     

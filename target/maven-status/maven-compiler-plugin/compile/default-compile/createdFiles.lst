@@ -1,6 +1,8 @@
 com\bocrace\listener\SetupListener.class
+com\bocrace\race\RaceManager.class
 com\bocrace\storage\StorageManager.class
 com\bocrace\BOCRacePlugin$SetupMode.class
+com\bocrace\race\ActiveRace.class
 com\bocrace\model\CourseType.class
 com\bocrace\command\BOCRaceCommand.class
 com\bocrace\config\ConfigManager.class
@@ -10,3 +12,4 @@ com\bocrace\model\RaceRecord.class
 com\bocrace\storage\YAMLRecordManager.class
 com\bocrace\storage\RecordManager.class
 com\bocrace\command\RaceStatsCommand.class
+com\bocrace\race\ActiveRace$State.class
