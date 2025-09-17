@@ -242,8 +242,16 @@ public class RaceLineListener implements Listener {
                 @Override
                 public void run() {
                     if (player.isOnline()) {
-                        plugin.raceDebugLog("🚀 EXECUTING TELEPORT - Player: " + player.getName() + " to lobby after race completion");
-                        teleportUtil.teleportToLobby(player, course, "race_complete");
+                        plugin.raceDebugLog("🚀 EXECUTING TELEPORT - Player: " + player.getName() + " after race completion, Button type: " + race.getStartButtonType());
+                        
+                        // Teleport based on which button was used to start the race
+                        if ("mainlobby".equals(race.getStartButtonType())) {
+                            // Started from main lobby → return to main lobby
+                            teleportUtil.teleportToLobby(player, course, "race_complete");
+                        } else {
+                            // Started from course lobby → return to course lobby
+                            teleportUtil.teleportToCourseLobby(player, course, "race_complete");
+                        }
                     }
                 }
             }.runTaskLater(plugin, 40L); // 2 second delay

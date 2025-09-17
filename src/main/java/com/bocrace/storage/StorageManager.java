@@ -168,7 +168,9 @@ public class StorageManager {
                 world = Bukkit.getWorlds().get(0);
             }
             
-            course.setSpstartbutton(readLocation(config.getConfigurationSection("spstartbutton"), world));
+            course.setSpstartbutton(readLocation(config.getConfigurationSection("spstartbutton"), world)); // Legacy
+            course.setSpmainlobbybutton(readLocation(config.getConfigurationSection("spmainlobbybutton"), world));
+            course.setSpcourselobbybutton(readLocation(config.getConfigurationSection("spcourselobbybutton"), world));
             course.setSpboatspawn(readLocation(config.getConfigurationSection("spboatspawn"), world));
             
             // Load race line locations
@@ -246,8 +248,10 @@ public class StorageManager {
                     (course.getSpstartbutton() != null ? "SET" : "NULL") + 
                     ", spboatspawn: " + (course.getSpboatspawn() != null ? "SET" : "NULL"));
                 
-                // Save original locations
-                writeLocation(config, "spstartbutton", course.getSpstartbutton());
+                // Save button locations
+                writeLocation(config, "spstartbutton", course.getSpstartbutton()); // Legacy
+                writeLocation(config, "spmainlobbybutton", course.getSpmainlobbybutton());
+                writeLocation(config, "spcourselobbybutton", course.getSpcourselobbybutton());
                 writeLocation(config, "spboatspawn", course.getSpboatspawn());
                 
                 // Save race line locations

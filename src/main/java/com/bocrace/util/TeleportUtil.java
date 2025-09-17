@@ -110,6 +110,41 @@ public class TeleportUtil {
     }
     
     /**
+     * Teleport player specifically to course lobby (for DQ from course lobby button)
+     */
+    public boolean teleportToCourseLobby(Player player, Course course, String reason) {
+        if (course.getSpcourselobby() == null) {
+            plugin.debugLog("Cannot teleport " + player.getName() + " - no course lobby set for course " + course.getName());
+            // Fallback to emergency teleport
+            return emergencyTeleport(player, course, null, reason + " (no course lobby)");
+        }
+        
+        Location destination = course.getSpcourselobby().clone();
+        destination = centerLocation(destination);
+        destination.add(0, 1.0, 0); // Add 1 block up to prevent suffocation
+        
+        boolean success = player.teleport(destination);
+        
+        if (success) {
+            plugin.debugLog("Successfully teleported " + player.getName() + " to course lobby at " + 
+                           destination.getWorld().getName() + " " + 
+                           destination.getBlockX() + "," + destination.getBlockY() + "," + destination.getBlockZ());
+            
+            // Send message based on reason
+            if ("dq_silent".equals(reason)) {
+                // No additional message - DQ message already sent
+            } else {
+                player.sendMessage("§aTeleported to course lobby for course '" + course.getName() + "'.");
+            }
+        } else {
+            plugin.debugLog("Failed to teleport " + player.getName() + " to course lobby");
+            player.sendMessage("§cTeleportation failed! Please contact an admin.");
+        }
+        
+        return success;
+    }
+    
+    /**
      * Center a location on the block (x.5, y, z.5)
      */
     public static Location centerLocation(Location location) {

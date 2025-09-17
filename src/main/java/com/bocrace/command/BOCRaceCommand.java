@@ -253,8 +253,8 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
             
             if (firstArg.equals("singleplayer") && secondArg.equals("setup")) {
                 List<String> setupActions = Arrays.asList(
-                    "setstartbutton", "setboatspawn", "setstart", "setfinish", 
-                    "setreturn", "setcourselobby", "setmainlobby"
+                    "setmainlobbybutton", "setcourselobbybutton", "setboatspawn", "setstartlinepoints", "setfinishlinepoints", 
+                    "setreturnmainbutton", "setcourselobbyspawn", "setmainlobbyspawn"
                 );
                 for (String action : setupActions) {
                     if (action.toLowerCase().startsWith(args[3].toLowerCase())) {
@@ -269,7 +269,7 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
             String thirdArg = args[3].toLowerCase();
             
             if (firstArg.equals("singleplayer") && secondArg.equals("setup") && 
-                (thirdArg.equals("setstart") || thirdArg.equals("setfinish"))) {
+                (thirdArg.equals("setstartlinepoints") || thirdArg.equals("setfinishlinepoints"))) {
                 List<String> pointNumbers = Arrays.asList("1", "2");
                 for (String point : pointNumbers) {
                     if (point.startsWith(args[4].toLowerCase())) {
@@ -480,13 +480,16 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         if (args.length == 3) {
             // Show setup options
             sender.sendMessage("§6=== Setup Options for '" + courseName + "' ===");
-            sender.sendMessage("§a/bocrace singleplayer setup " + courseName + " setstartbutton §7- Set the start button location");
+            sender.sendMessage("§e§lStart Buttons:");
+            sender.sendMessage("§a/bocrace singleplayer setup " + courseName + " setmainlobbybutton §7- Main lobby button (teleports busy players to course lobby)");
+            sender.sendMessage("§a/bocrace singleplayer setup " + courseName + " setcourselobbybutton §7- Course lobby button (shows busy message only)");
+            sender.sendMessage("§e§lCourse Components:");
             sender.sendMessage("§a/bocrace singleplayer setup " + courseName + " setboatspawn §7- Set the boat spawn location");
-            sender.sendMessage("§a/bocrace singleplayer setup " + courseName + " setstart <1|2> §7- Set start line points");
-            sender.sendMessage("§a/bocrace singleplayer setup " + courseName + " setfinish <1|2> §7- Set finish line points");
-            sender.sendMessage("§a/bocrace singleplayer setup " + courseName + " setreturn §7- Set return/restart location");
-            sender.sendMessage("§a/bocrace singleplayer setup " + courseName + " setcourselobby §7- Set course lobby location");
-            sender.sendMessage("§a/bocrace singleplayer setup " + courseName + " setmainlobby §7- Set main lobby location");
+            sender.sendMessage("§a/bocrace singleplayer setup " + courseName + " setstartlinepoints <1|2> §7- Set start line points");
+            sender.sendMessage("§a/bocrace singleplayer setup " + courseName + " setfinishlinepoints <1|2> §7- Set finish line points");
+            sender.sendMessage("§a/bocrace singleplayer setup " + courseName + " setreturnmainbutton §7- Set return/restart button location");
+            sender.sendMessage("§a/bocrace singleplayer setup " + courseName + " setcourselobbyspawn §7- Set course lobby spawn location");
+            sender.sendMessage("§a/bocrace singleplayer setup " + courseName + " setmainlobbyspawn §7- Set main lobby spawn location");
             plugin.getLogger().info("[DEBUG] Setup options displayed for course: " + courseName);
             return true;
         }
@@ -495,19 +498,21 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         plugin.getLogger().info("[DEBUG] Setup action requested: " + setupAction);
         
         switch (setupAction) {
-            case "setstartbutton":
-                return handleSetStartButton(sender, course);
+            case "setmainlobbybutton":
+                return handleSetMainLobbyButton(sender, course);
+            case "setcourselobbybutton":
+                return handleSetCourseLobbyButton(sender, course);
             case "setboatspawn":
                 return handleSetBoatSpawn(sender, course);
-            case "setstart":
+            case "setstartlinepoints":
                 return handleSetStart(sender, args, course);
-            case "setfinish":
+            case "setfinishlinepoints":
                 return handleSetFinish(sender, args, course);
-            case "setreturn":
+            case "setreturnmainbutton":
                 return handleSetReturn(sender, course);
-            case "setcourselobby":
+            case "setcourselobbyspawn":
                 return handleSetCourseLobby(sender, course);
-            case "setmainlobby":
+            case "setmainlobbyspawn":
                 return handleSetMainLobby(sender, course);
             default:
                 sender.sendMessage("§cUnknown setup action. Use /bocrace singleplayer setup " + courseName + " to see available options.");
@@ -516,12 +521,12 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         }
     }
     
-    private boolean handleSetStartButton(CommandSender sender, Course course) {
-        plugin.getLogger().info("[DEBUG] SetStartButton called - Player: " + sender.getName() + ", Course: " + course.getName());
+    private boolean handleSetMainLobbyButton(CommandSender sender, Course course) {
+        plugin.getLogger().info("[DEBUG] SetMainLobbyButton called - Player: " + sender.getName() + ", Course: " + course.getName());
         
         if (!(sender instanceof Player)) {
             sender.sendMessage("§cThis command can only be used by players!");
-            plugin.getLogger().info("[DEBUG] SetStartButton failed - not a player");
+            plugin.getLogger().info("[DEBUG] SetMainLobbyButton failed - not a player");
             return true;
         }
         
@@ -530,11 +535,35 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
             " " + player.getLocation().getBlockX() + "," + player.getLocation().getBlockY() + "," + player.getLocation().getBlockZ());
         
         // Put player in setup mode
-        plugin.setPlayerSetupMode(player, course.getName(), "setstartbutton");
+        plugin.setPlayerSetupMode(player, course.getName(), "setmainlobbybutton");
         
-        player.sendMessage("§eRight-click the start button for course '" + course.getName() + "'");
+        player.sendMessage("§eRight-click the main lobby start button for course '" + course.getName() + "'");
+        player.sendMessage("§7This button will teleport busy players to course lobby to wait");
         player.sendMessage("§7You have 30 seconds to right-click a block!");
-        plugin.getLogger().info("[DEBUG] Player " + player.getName() + " entered setup mode for setstartbutton");
+        plugin.getLogger().info("[DEBUG] Player " + player.getName() + " entered setup mode for setmainlobbybutton");
+        return true;
+    }
+    
+    private boolean handleSetCourseLobbyButton(CommandSender sender, Course course) {
+        plugin.getLogger().info("[DEBUG] SetCourseLobbyButton called - Player: " + sender.getName() + ", Course: " + course.getName());
+        
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("§cThis command can only be used by players!");
+            plugin.getLogger().info("[DEBUG] SetCourseLobbyButton failed - not a player");
+            return true;
+        }
+        
+        Player player = (Player) sender;
+        plugin.getLogger().info("[DEBUG] Player location: " + player.getLocation().getWorld().getName() + 
+            " " + player.getLocation().getBlockX() + "," + player.getLocation().getBlockY() + "," + player.getLocation().getBlockZ());
+        
+        // Put player in setup mode
+        plugin.setPlayerSetupMode(player, course.getName(), "setcourselobbybutton");
+        
+        player.sendMessage("§eRight-click the course lobby start button for course '" + course.getName() + "'");
+        player.sendMessage("§7This button will show busy message only (no teleport)");
+        player.sendMessage("§7You have 30 seconds to right-click a block!");
+        plugin.getLogger().info("[DEBUG] Player " + player.getName() + " entered setup mode for setcourselobbybutton");
         return true;
     }
     

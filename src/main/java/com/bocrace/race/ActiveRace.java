@@ -33,6 +33,7 @@ public class ActiveRace {
     private long endNanoTime;
     private String dqReason;
     private long lastDisplayedSecond = -1; // For chat timer display
+    private String startButtonType; // Track which button was used to start race
     
     public ActiveRace(UUID playerUuid, String playerName, String courseName, CourseType courseType, Location preRaceLocation) {
         this.playerUuid = playerUuid;
@@ -57,6 +58,7 @@ public class ActiveRace {
     public long getEndNanoTime() { return endNanoTime; }
     public String getDqReason() { return dqReason; }
     public long getLastDisplayedSecond() { return lastDisplayedSecond; }
+    public String getStartButtonType() { return startButtonType; }
     
     // Setters
     public void setBoatUuid(UUID boatUuid) { this.boatUuid = boatUuid; }
@@ -65,6 +67,7 @@ public class ActiveRace {
     public void setEndNanoTime(long endNanoTime) { this.endNanoTime = endNanoTime; }
     public void setDqReason(String dqReason) { this.dqReason = dqReason; }
     public void setLastDisplayedSecond(long lastDisplayedSecond) { this.lastDisplayedSecond = lastDisplayedSecond; }
+    public void setStartButtonType(String startButtonType) { this.startButtonType = startButtonType; }
     
     /**
      * Get the current race duration in milliseconds

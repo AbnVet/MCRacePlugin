@@ -127,12 +127,20 @@ public class RaceCleanupListener implements Listener {
         // Remove the boat
         boatManager.removeRaceBoat(boat, "player_exited");
         
-        // DQ teleport using lobby priority (same as normal finish)
+        // DQ teleport based on button type used
         Course course = plugin.getStorageManager().getCourse(race.getCourseName());
         if (course != null) {
-            plugin.debugLog("🚫 DQ TELEPORT - Player: " + player.getName() + " exited boat");
+            plugin.debugLog("🚫 DQ TELEPORT - Player: " + player.getName() + " exited boat, Button type: " + race.getStartButtonType());
             player.sendMessage("§c§l❌ DISQUALIFIED! §cYou exited your boat. Race ended.");
-            teleportUtil.teleportToLobby(player, course, "dq_silent"); // Silent teleport (no additional message)
+            
+            // Teleport based on which button was used to start the race
+            if ("mainlobby".equals(race.getStartButtonType())) {
+                // Started from main lobby → return to main lobby
+                teleportUtil.teleportToLobby(player, course, "dq_silent");
+            } else {
+                // Started from course lobby → return to course lobby
+                teleportUtil.teleportToCourseLobby(player, course, "dq_silent");
+            }
         } else {
             // Course not found, use pre-race location or world spawn
             Location safeLocation = race.getPreRaceLocation();

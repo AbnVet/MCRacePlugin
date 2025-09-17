@@ -61,7 +61,7 @@ public class SetupListener implements Listener {
             event.setCancelled(true);
             
             // Simple boat spawn
-            spawnRaceBoat(player, course);
+            spawnRaceBoat(player, course, clickedBlock);
             return;
         }
         
@@ -79,7 +79,7 @@ public class SetupListener implements Listener {
         plugin.raceDebugLog("❌ Button ignored - not a race button");
     }
     
-    private void spawnRaceBoat(Player player, Course course) {
+    private void spawnRaceBoat(Player player, Course course, Block clickedBlock) {
         plugin.raceDebugLog("🚤 SPAWNING RACE BOAT - Player: " + player.getName() + ", Course: " + course.getName());
         
         // Check if course is ready for racing
@@ -96,13 +96,29 @@ public class SetupListener implements Listener {
             return;
         }
         
-        // Check if course is occupied
+        // Check if course is occupied - behavior depends on which button was clicked
         if (plugin.getRaceManager().isCourseOccupied(course.getName())) {
-            player.sendMessage("§eTrack in use, please wait.");
-            plugin.raceDebugLog("❌ Course occupied");
-            teleportToLobby(player, course);
+            // Determine which button was clicked
+            boolean isMainLobbyButton = course.getSpmainlobbybutton() != null && 
+                isSameBlock(course.getSpmainlobbybutton(), clickedBlock.getLocation());
+            
+            plugin.raceDebugLog("❌ Course occupied - Button type: " + (isMainLobbyButton ? "mainlobby" : "courselobby"));
+            
+            if (isMainLobbyButton) {
+                // Main lobby button: teleport to course lobby to wait
+                player.sendMessage("§eCourse is in use. Please wait in the course lobby.");
+                teleportToCourseLobby(player, course);
+            } else {
+                // Course lobby button: just message (they're already at course)
+                player.sendMessage("§eCourse is in use, wait until race is finished.");
+            }
             return;
         }
+        
+        // Determine which button was clicked to track for finish teleport
+        boolean isMainLobbyButton = course.getSpmainlobbybutton() != null && 
+            isSameBlock(course.getSpmainlobbybutton(), clickedBlock.getLocation());
+        String buttonType = isMainLobbyButton ? "mainlobby" : "courselobby";
         
         // Start the race
         com.bocrace.race.ActiveRace race = plugin.getRaceManager().startRace(player, course);
@@ -111,6 +127,10 @@ public class SetupListener implements Listener {
             plugin.raceDebugLog("❌ Race start failed");
             return;
         }
+        
+        // Track which button was used for proper finish/DQ teleport
+        race.setStartButtonType(buttonType);
+        plugin.raceDebugLog("🔘 Button type recorded: " + buttonType);
         
         // Spawn boat with PDC tracking
         org.bukkit.entity.Boat boat = plugin.getBoatManager().spawnRaceBoat(player, course, race);
@@ -160,10 +180,34 @@ public class SetupListener implements Listener {
         plugin.raceDebugLog("✅ TELEPORT SUCCESS - " + locationName);
     }
     
+    private void teleportToCourseLobby(Player player, Course course) {
+        plugin.raceDebugLog("🚀 TELEPORTING TO COURSE LOBBY - Player: " + player.getName() + ", Course: " + course.getName());
+        
+        if (course.getSpcourselobby() == null) {
+            player.sendMessage("§cCourse lobby location not set for this course!");
+            return;
+        }
+        
+        Location destination = course.getSpcourselobby().clone();
+        destination.setX(destination.getBlockX() + 0.5);
+        destination.setZ(destination.getBlockZ() + 0.5);
+        destination.add(0, 1.0, 0);
+        
+        player.teleport(destination);
+        plugin.raceDebugLog("✅ TELEPORT SUCCESS - course lobby");
+    }
+    
     private Course findCourseByStartButton(Block block) {
         for (Course course : plugin.getStorageManager().getCoursesByType(com.bocrace.model.CourseType.SINGLEPLAYER)) {
-            if (course.getSpstartbutton() != null) {
-                if (isSameBlock(course.getSpstartbutton(), block.getLocation())) {
+            // Check main lobby button
+            if (course.getSpmainlobbybutton() != null) {
+                if (isSameBlock(course.getSpmainlobbybutton(), block.getLocation())) {
+                    return course;
+                }
+            }
+            // Check course lobby button
+            if (course.getSpcourselobbybutton() != null) {
+                if (isSameBlock(course.getSpcourselobbybutton(), block.getLocation())) {
                     return course;
                 }
             }
@@ -241,11 +285,18 @@ public class SetupListener implements Listener {
         // Handle different setup actions
         boolean success = false;
         switch (action) {
-            case "setstartbutton":
-                course.setSpstartbutton(location);
+            case "setmainlobbybutton":
+                course.setSpmainlobbybutton(location);
                 success = true;
-                player.sendMessage("§aStart button location set for course '" + courseName + "'!");
-                plugin.getLogger().info("[DEBUG] Start button location set: " + location.toString());
+                player.sendMessage("§aMain lobby start button location set for course '" + courseName + "'!");
+                plugin.getLogger().info("[DEBUG] Main lobby start button location set: " + location.toString());
+                break;
+                
+            case "setcourselobbybutton":
+                course.setSpcourselobbybutton(location);
+                success = true;
+                player.sendMessage("§aCourse lobby start button location set for course '" + courseName + "'!");
+                plugin.getLogger().info("[DEBUG] Course lobby start button location set: " + location.toString());
                 break;
                 
             case "setboatspawn":
@@ -283,25 +334,25 @@ public class SetupListener implements Listener {
                 plugin.getLogger().info("[DEBUG] Finish line point 2 set: " + location.toString());
                 break;
                 
-            case "setreturn":
+            case "setreturnmainbutton":
                 course.setSpreturn(location);
                 success = true;
-                player.sendMessage("§aReturn location set for course '" + courseName + "'!");
-                plugin.getLogger().info("[DEBUG] Return location set: " + location.toString());
+                player.sendMessage("§aReturn main button location set for course '" + courseName + "'!");
+                plugin.getLogger().info("[DEBUG] Return main button location set: " + location.toString());
                 break;
                 
-            case "setcourselobby":
+            case "setcourselobbyspawn":
                 course.setSpcourselobby(location);
                 success = true;
-                player.sendMessage("§aCourse lobby location set for course '" + courseName + "'!");
-                plugin.getLogger().info("[DEBUG] Course lobby location set: " + location.toString());
+                player.sendMessage("§aCourse lobby spawn location set for course '" + courseName + "'!");
+                plugin.getLogger().info("[DEBUG] Course lobby spawn location set: " + location.toString());
                 break;
                 
-            case "setmainlobby":
+            case "setmainlobbyspawn":
                 course.setSpmainlobby(location);
                 success = true;
-                player.sendMessage("§aMain lobby location set for course '" + courseName + "'!");
-                plugin.getLogger().info("[DEBUG] Main lobby location set: " + location.toString());
+                player.sendMessage("§aMain lobby spawn location set for course '" + courseName + "'!");
+                plugin.getLogger().info("[DEBUG] Main lobby spawn location set: " + location.toString());
                 break;
                 
                 

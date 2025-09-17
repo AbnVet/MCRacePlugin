@@ -17,7 +17,9 @@ public class Course {
     private Map<String, Object> data;
     
     // Singleplayer race components
-    private Location spstartbutton;
+    private Location spstartbutton; // Legacy field - keep for backward compatibility
+    private Location spmainlobbybutton;
+    private Location spcourselobbybutton;
     private Location spboatspawn;
     
     // Race line locations
@@ -123,6 +125,22 @@ public class Course {
     
     public void setSpstartbutton(Location spstartbutton) {
         this.spstartbutton = spstartbutton;
+    }
+    
+    public Location getSpmainlobbybutton() {
+        return spmainlobbybutton;
+    }
+    
+    public void setSpmainlobbybutton(Location spmainlobbybutton) {
+        this.spmainlobbybutton = spmainlobbybutton;
+    }
+    
+    public Location getSpcourselobbybutton() {
+        return spcourselobbybutton;
+    }
+    
+    public void setSpcourselobbybutton(Location spcourselobbybutton) {
+        this.spcourselobbybutton = spcourselobbybutton;
     }
     
     public Location getSpboatspawn() {
