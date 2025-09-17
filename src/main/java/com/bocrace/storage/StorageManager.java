@@ -160,14 +160,14 @@ public class StorageManager {
             plugin.getLogger().warning("No lastEdited date for " + name + ", using createdOn");
         }
         
-        // Load singleplayer Location fields
+        // Load course-specific Location fields
+        World world = Bukkit.getWorld(config.getString("world", "world"));
+        if (world == null) {
+            plugin.getLogger().warning("Course '" + name + "' references unknown world, using default world");
+            world = Bukkit.getWorlds().get(0);
+        }
+        
         if (type == CourseType.SINGLEPLAYER) {
-            World world = Bukkit.getWorld(config.getString("world", "world"));
-            if (world == null) {
-                plugin.getLogger().warning("Course '" + name + "' references unknown world, using default world");
-                world = Bukkit.getWorlds().get(0);
-            }
-            
             course.setSpstartbutton(readLocation(config.getConfigurationSection("spstartbutton"), world)); // Legacy
             course.setSpmainlobbybutton(readLocation(config.getConfigurationSection("spmainlobbybutton"), world));
             course.setSpcourselobbybutton(readLocation(config.getConfigurationSection("spcourselobbybutton"), world));
@@ -184,6 +184,30 @@ public class StorageManager {
             course.setSpcourselobby(readLocation(config.getConfigurationSection("spcourselobby"), world));
             course.setSpmainlobby(readLocation(config.getConfigurationSection("spmainlobby"), world));
             
+        } else if (type == CourseType.MULTIPLAYER) {
+            // Load multiplayer button locations
+            course.setMpraceLobbySpawn(readLocation(config.getConfigurationSection("mpraceLobbySpawn"), world));
+            course.setMpcreateRaceButton(readLocation(config.getConfigurationSection("mpcreateRaceButton"), world));
+            course.setMpstartRaceButton(readLocation(config.getConfigurationSection("mpstartRaceButton"), world));
+            course.setMpjoinRaceButton(readLocation(config.getConfigurationSection("mpjoinRaceButton"), world));
+            course.setMpcancelRaceButton(readLocation(config.getConfigurationSection("mpcancelRaceButton"), world));
+            course.setMpreturnButton(readLocation(config.getConfigurationSection("mpreturnButton"), world));
+            
+            // Load multiplayer boat spawns (up to 10)
+            List<Location> boatSpawns = new ArrayList<>();
+            for (int i = 1; i <= 10; i++) {
+                Location spawn = readLocation(config.getConfigurationSection("mpboatSpawn" + i), world);
+                if (spawn != null) {
+                    boatSpawns.add(spawn);
+                }
+            }
+            course.setMpboatSpawns(boatSpawns);
+            
+            // Load race line locations (shared with singleplayer)
+            course.setSpstart1(readLocation(config.getConfigurationSection("spstart1"), world));
+            course.setSpstart2(readLocation(config.getConfigurationSection("spstart2"), world));
+            course.setSpfinish1(readLocation(config.getConfigurationSection("spfinish1"), world));
+            course.setSpfinish2(readLocation(config.getConfigurationSection("spfinish2"), world));
         }
         
         // Load usage tracking
@@ -242,7 +266,7 @@ public class StorageManager {
             config.set("createdOn", course.getCreatedOn().format(dateTimeFormatter));
             config.set("lastEdited", course.getLastEdited().format(dateTimeFormatter));
             
-            // Save singleplayer Location fields
+            // Save course-specific Location fields
             if (course.getType() == CourseType.SINGLEPLAYER) {
                 plugin.getLogger().info("[DEBUG] Saving singleplayer course - spstartbutton: " + 
                     (course.getSpstartbutton() != null ? "SET" : "NULL") + 
@@ -265,6 +289,33 @@ public class StorageManager {
                 writeLocation(config, "spcourselobby", course.getSpcourselobby());
                 writeLocation(config, "spmainlobby", course.getSpmainlobby());
                 
+            } else if (course.getType() == CourseType.MULTIPLAYER) {
+                plugin.getLogger().info("[DEBUG] Saving multiplayer course - buttons: " + 
+                    (course.getMpcreateRaceButton() != null ? "CREATE" : "") + 
+                    (course.getMpstartRaceButton() != null ? " START" : "") + 
+                    (course.getMpjoinRaceButton() != null ? " JOIN" : "") + 
+                    ", boat spawns: " + (course.getMpboatSpawns() != null ? course.getMpboatSpawns().size() : 0));
+                
+                // Save multiplayer button locations
+                writeLocation(config, "mpraceLobbySpawn", course.getMpraceLobbySpawn());
+                writeLocation(config, "mpcreateRaceButton", course.getMpcreateRaceButton());
+                writeLocation(config, "mpstartRaceButton", course.getMpstartRaceButton());
+                writeLocation(config, "mpjoinRaceButton", course.getMpjoinRaceButton());
+                writeLocation(config, "mpcancelRaceButton", course.getMpcancelRaceButton());
+                writeLocation(config, "mpreturnButton", course.getMpreturnButton());
+                
+                // Save multiplayer boat spawns (up to 10)
+                if (course.getMpboatSpawns() != null) {
+                    for (int i = 0; i < course.getMpboatSpawns().size() && i < 10; i++) {
+                        writeLocation(config, "mpboatSpawn" + (i + 1), course.getMpboatSpawns().get(i));
+                    }
+                }
+                
+                // Save race line locations (shared with singleplayer)
+                writeLocation(config, "spstart1", course.getSpstart1());
+                writeLocation(config, "spstart2", course.getSpstart2());
+                writeLocation(config, "spfinish1", course.getSpfinish1());
+                writeLocation(config, "spfinish2", course.getSpfinish2());
             }
             
             // Save usage tracking

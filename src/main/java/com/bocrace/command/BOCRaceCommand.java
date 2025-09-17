@@ -99,7 +99,7 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
     
     private boolean handleMultiplayerCommand(CommandSender sender, String[] args) {
         if (args.length < 2) {
-            sender.sendMessage("§cUsage: /bocrace multiplayer <create|edit|delete|list|tp|info|reload|stats|recent>");
+            sender.sendMessage("§cUsage: /bocrace multiplayer <create|setup|delete|list|tp|info|reload|stats|recent>");
             return true;
         }
         
@@ -108,6 +108,8 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         switch (action) {
             case "create":
                 return handleMultiplayerCreate(sender, args);
+            case "setup":
+                return handleMultiplayerSetup(sender, args);
             case "edit":
                 sender.sendMessage("§eMultiplayer edit not implemented yet.");
                 return true;
@@ -151,6 +153,7 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         // Multiplayer Commands (Aqua)
         sender.sendMessage("§6Multiplayer Commands:");
         sender.sendMessage("§b/bocrace multiplayer create <name> §7- Create a new multiplayer course");
+        sender.sendMessage("§b/bocrace multiplayer setup <name> §7- Setup course components (buttons, spawns, etc.)");
         sender.sendMessage("§b/bocrace multiplayer edit <name> §7- Edit an existing multiplayer course");
         sender.sendMessage("§b/bocrace multiplayer delete <name> §7- Delete a multiplayer course");
         sender.sendMessage("§b/bocrace multiplayer list §7- List all multiplayer courses");
@@ -212,7 +215,7 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
                 }
             } else if (firstArg.equals("multiplayer")) {
                 // Multiplayer subcommands
-                List<String> mpCommands = Arrays.asList("create", "edit", "delete", "list", "tp", "info", "reload", "stats", "recent");
+                List<String> mpCommands = Arrays.asList("create", "setup", "edit", "delete", "list", "tp", "info", "reload", "stats", "recent");
                 for (String mpCommand : mpCommands) {
                     if (mpCommand.toLowerCase().startsWith(args[1].toLowerCase())) {
                         completions.add(mpCommand);
@@ -236,7 +239,7 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
                 }
             } else if (firstArg.equals("multiplayer")) {
                 if (secondArg.equals("delete") || secondArg.equals("info") || secondArg.equals("tp") || 
-                    secondArg.equals("stats") || secondArg.equals("recent")) {
+                    secondArg.equals("stats") || secondArg.equals("recent") || secondArg.equals("setup")) {
                     // Add multiplayer course names
                     var courses = plugin.getStorageManager().getCoursesByType(CourseType.MULTIPLAYER);
                     for (Course course : courses) {
@@ -247,7 +250,7 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
                 }
             }
         } else if (args.length == 4) {
-            // Fourth argument - setup actions for singleplayer setup command
+            // Fourth argument - setup actions
             String firstArg = args[0].toLowerCase();
             String secondArg = args[1].toLowerCase();
             
@@ -261,19 +264,39 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
                         completions.add(action);
                     }
                 }
+            } else if (firstArg.equals("multiplayer") && secondArg.equals("setup")) {
+                List<String> mpSetupActions = Arrays.asList(
+                    "setmpracelobbyspawn", "setmpcreateracebutton", "setmpstartracebutton", "setmpjoinracebutton", 
+                    "setmpcancelracebutton", "setmpreturnbutton", "setmpboatspawn", "setstartlinepoints", "setfinishlinepoints"
+                );
+                for (String action : mpSetupActions) {
+                    if (action.toLowerCase().startsWith(args[3].toLowerCase())) {
+                        completions.add(action);
+                    }
+                }
             }
         } else if (args.length == 5) {
-            // Fifth argument - point numbers for setstart/setfinish
+            // Fifth argument - point numbers for setstart/setfinish or boat spawn numbers
             String firstArg = args[0].toLowerCase();
             String secondArg = args[1].toLowerCase();
-            String thirdArg = args[3].toLowerCase();
+            String fourthArg = args[3].toLowerCase();
             
-            if (firstArg.equals("singleplayer") && secondArg.equals("setup") && 
-                (thirdArg.equals("setstartlinepoints") || thirdArg.equals("setfinishlinepoints"))) {
-                List<String> pointNumbers = Arrays.asList("1", "2");
-                for (String point : pointNumbers) {
-                    if (point.startsWith(args[4].toLowerCase())) {
-                        completions.add(point);
+            if (secondArg.equals("setup")) {
+                if (fourthArg.equals("setstartlinepoints") || fourthArg.equals("setfinishlinepoints")) {
+                    // Point numbers for start/finish lines
+                    List<String> pointNumbers = Arrays.asList("1", "2");
+                    for (String point : pointNumbers) {
+                        if (point.startsWith(args[4].toLowerCase())) {
+                            completions.add(point);
+                        }
+                    }
+                } else if (firstArg.equals("multiplayer") && fourthArg.equals("setmpboatspawn")) {
+                    // Boat spawn numbers for multiplayer
+                    List<String> spawnNumbers = Arrays.asList("1", "2", "3", "4", "5", "6", "7", "8", "9", "10");
+                    for (String spawn : spawnNumbers) {
+                        if (spawn.startsWith(args[4].toLowerCase())) {
+                            completions.add(spawn);
+                        }
                     }
                 }
             }
@@ -902,6 +925,145 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         plugin.getStorageManager().saveCourse(course);
         
         sender.sendMessage("§aMultiplayer course '" + courseName + "' created successfully!");
+        return true;
+    }
+    
+    private boolean handleMultiplayerSetup(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("§cThis command can only be used by players!");
+            return true;
+        }
+        
+        if (args.length < 3) {
+            sender.sendMessage("§cUsage: /bocrace multiplayer setup <name> [action]");
+            sender.sendMessage("§7Available actions:");
+            sender.sendMessage("§7  setmpraceLobbySpawn - Set race lobby spawn point");
+            sender.sendMessage("§7  setmpcreateRaceButton - Set create race button");
+            sender.sendMessage("§7  setmpstartRaceButton - Set start race button (triggers redstone)");
+            sender.sendMessage("§7  setmpjoinRaceButton - Set join race button");
+            sender.sendMessage("§7  setmpcancelRaceButton - Set cancel race button (optional)");
+            sender.sendMessage("§7  setmpreturnButton - Set return to lobby button");
+            sender.sendMessage("§7  setmpboatspawn <1-10> - Set boat spawn point (1-10)");
+            sender.sendMessage("§7  setstartlinepoints - Set start line detection points");
+            sender.sendMessage("§7  setfinishlinepoints - Set finish line detection points");
+            return true;
+        }
+        
+        String courseName = args[2];
+        Course course = plugin.getStorageManager().getCourse(courseName);
+        
+        if (course == null || course.getType() != CourseType.MULTIPLAYER) {
+            sender.sendMessage("§cMultiplayer course '" + courseName + "' not found!");
+            return true;
+        }
+        
+        if (args.length < 4) {
+            // Show current setup status
+            showMultiplayerSetupStatus(sender, course);
+            return true;
+        }
+        
+        String action = args[3].toLowerCase();
+        Player player = (Player) sender;
+        
+        return handleMultiplayerSetupAction(player, course, action, args);
+    }
+    
+    private void showMultiplayerSetupStatus(CommandSender sender, Course course) {
+        sender.sendMessage("§6=== Multiplayer Course Setup: " + course.getName() + " ===");
+        sender.sendMessage("§7Race Lobby Spawn: " + (course.getMpraceLobbySpawn() != null ? "§aSet" : "§cNot Set"));
+        sender.sendMessage("§7Create Race Button: " + (course.getMpcreateRaceButton() != null ? "§aSet" : "§cNot Set"));
+        sender.sendMessage("§7Start Race Button: " + (course.getMpstartRaceButton() != null ? "§aSet" : "§cNot Set"));
+        sender.sendMessage("§7Join Race Button: " + (course.getMpjoinRaceButton() != null ? "§aSet" : "§cNot Set"));
+        sender.sendMessage("§7Cancel Race Button: " + (course.getMpcancelRaceButton() != null ? "§aSet" : "§7Optional"));
+        sender.sendMessage("§7Return Button: " + (course.getMpreturnButton() != null ? "§aSet" : "§cNot Set"));
+        
+        int boatSpawns = course.getMpboatSpawns() != null ? course.getMpboatSpawns().size() : 0;
+        sender.sendMessage("§7Boat Spawns: §e" + boatSpawns + "/10 " + (boatSpawns >= 2 ? "§a✓" : "§c(Need at least 2)"));
+        
+        sender.sendMessage("§7Start Line: " + (course.getSpstart1() != null && course.getSpstart2() != null ? "§aSet" : "§cNot Set"));
+        sender.sendMessage("§7Finish Line: " + (course.getSpfinish1() != null && course.getSpfinish2() != null ? "§aSet" : "§cNot Set"));
+    }
+    
+    private boolean handleMultiplayerSetupAction(Player player, Course course, String action, String[] args) {
+        Location playerLoc = player.getLocation();
+        
+        switch (action) {
+            case "setmpracelobbyspawn":
+                course.setMpraceLobbySpawn(playerLoc);
+                player.sendMessage("§aRace lobby spawn set for course '" + course.getName() + "'!");
+                break;
+                
+            case "setmpcreateracebutton":
+                course.setMpcreateRaceButton(playerLoc);
+                player.sendMessage("§aCreate race button location set for course '" + course.getName() + "'!");
+                break;
+                
+            case "setmpstartracebutton":
+                course.setMpstartRaceButton(playerLoc);
+                player.sendMessage("§aStart race button location set for course '" + course.getName() + "'!");
+                player.sendMessage("§7This button will trigger redstone AND start the race.");
+                break;
+                
+            case "setmpjoinracebutton":
+                course.setMpjoinRaceButton(playerLoc);
+                player.sendMessage("§aJoin race button location set for course '" + course.getName() + "'!");
+                break;
+                
+            case "setmpcancelracebutton":
+                course.setMpcancelRaceButton(playerLoc);
+                player.sendMessage("§aCancel race button location set for course '" + course.getName() + "'!");
+                break;
+                
+            case "setmpreturnbutton":
+                course.setMpreturnButton(playerLoc);
+                player.sendMessage("§aReturn button location set for course '" + course.getName() + "'!");
+                break;
+                
+            case "setmpboatspawn":
+                if (args.length < 5) {
+                    player.sendMessage("§cUsage: /bocrace multiplayer setup " + course.getName() + " setmpboatspawn <1-10>");
+                    return true;
+                }
+                
+                try {
+                    int spawnIndex = Integer.parseInt(args[4]);
+                    if (spawnIndex < 1 || spawnIndex > 10) {
+                        player.sendMessage("§cBoat spawn index must be between 1 and 10!");
+                        return true;
+                    }
+                    
+                    // Ensure list has enough capacity
+                    while (course.getMpboatSpawns().size() < spawnIndex) {
+                        course.getMpboatSpawns().add(null);
+                    }
+                    
+                    // Set the spawn at the correct index (0-based)
+                    course.getMpboatSpawns().set(spawnIndex - 1, playerLoc);
+                    player.sendMessage("§aBoat spawn " + spawnIndex + " set for course '" + course.getName() + "'!");
+                    
+                } catch (NumberFormatException e) {
+                    player.sendMessage("§cInvalid spawn index. Use a number between 1 and 10.");
+                    return true;
+                }
+                break;
+                
+            case "setstartlinepoints":
+                // Reuse singleplayer logic for start line
+                return handleSetStart(player, args, course);
+                
+            case "setfinishlinepoints":
+                // Reuse singleplayer logic for finish line
+                return handleSetFinish(player, args, course);
+                
+            default:
+                player.sendMessage("§cUnknown setup action: " + action);
+                return true;
+        }
+        
+        // Save the course after any changes
+        course.updateLastEdited();
+        plugin.getStorageManager().saveCourse(course);
         return true;
     }
     

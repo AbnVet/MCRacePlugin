@@ -1,9 +1,20 @@
 # BOCRacePlugin Configuration
-# Race timeout in seconds
+# Singleplayer race timeout in seconds
 race-timeout: 60
 
-# Maximum players per multiplayer race
-max-players: 10
+# Multiplayer race configuration
+multiplayer:
+  race-timeout: 300        # 5 minutes default for multiplayer races
+  max-join-players: 9      # Leader takes 10th slot when starting
+  announcements:
+    # Server-wide announcement when a race is created
+    race-created: "&6{player} &eis starting a multiplayer race on &a{course}&e! Join at the race lobby for prizes!"
+    # Announcement when race starts
+    race-started: "&aRace started on &6{course}&a! &7({players} racers)"
+    # Announcement when race finishes
+    race-finished: "&6Race completed on &a{course}&6! Results posted."
+    # Announcement when race times out
+    race-timeout: "&cRace on &6{course} &chas timed out! Unfinished players disqualified."
 
 # Sound and particle settings
 sounds:

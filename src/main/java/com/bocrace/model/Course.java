@@ -3,7 +3,9 @@ package com.bocrace.model;
 import com.bocrace.BOCRacePlugin;
 import org.bukkit.Location;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class Course {
@@ -38,6 +40,15 @@ public class Course {
     private LocalDateTime lastUsed;
     private String lastUsedBy;
     
+    // Multiplayer race components
+    private Location mpraceLobbySpawn;      // Where players wait/return after races
+    private Location mpcreateRaceButton;    // Leader creates race session
+    private Location mpstartRaceButton;     // Leader starts race + triggers redstone
+    private Location mpjoinRaceButton;      // Players join race lobby
+    private Location mpcancelRaceButton;    // Leader cancels race (optional)
+    private Location mpreturnButton;        // End-of-course return to lobby
+    private List<Location> mpboatSpawns;    // 10 random spawn points for boats
+    
     // Per-course settings (optional overrides)
     private Boolean soundsEnabled;      // null = use global config
     private Boolean particlesEnabled;   // null = use global config
@@ -50,6 +61,7 @@ public class Course {
         this.createdOn = LocalDateTime.now();
         this.lastEdited = LocalDateTime.now();
         this.customMessages = new HashMap<>();
+        this.mpboatSpawns = new ArrayList<>();
     }
     
     // Constructor with required fields
@@ -185,6 +197,44 @@ public class Course {
     public void setLastUsedBy(String lastUsedBy) { this.lastUsedBy = lastUsedBy; }
     
     
+    // Multiplayer getters and setters
+    public Location getMpraceLobbySpawn() { return mpraceLobbySpawn; }
+    public void setMpraceLobbySpawn(Location mpraceLobbySpawn) { this.mpraceLobbySpawn = mpraceLobbySpawn; }
+    
+    public Location getMpcreateRaceButton() { return mpcreateRaceButton; }
+    public void setMpcreateRaceButton(Location mpcreateRaceButton) { this.mpcreateRaceButton = mpcreateRaceButton; }
+    
+    public Location getMpstartRaceButton() { return mpstartRaceButton; }
+    public void setMpstartRaceButton(Location mpstartRaceButton) { this.mpstartRaceButton = mpstartRaceButton; }
+    
+    public Location getMpjoinRaceButton() { return mpjoinRaceButton; }
+    public void setMpjoinRaceButton(Location mpjoinRaceButton) { this.mpjoinRaceButton = mpjoinRaceButton; }
+    
+    public Location getMpcancelRaceButton() { return mpcancelRaceButton; }
+    public void setMpcancelRaceButton(Location mpcancelRaceButton) { this.mpcancelRaceButton = mpcancelRaceButton; }
+    
+    public Location getMpreturnButton() { return mpreturnButton; }
+    public void setMpreturnButton(Location mpreturnButton) { this.mpreturnButton = mpreturnButton; }
+    
+    public List<Location> getMpboatSpawns() { return mpboatSpawns; }
+    public void setMpboatSpawns(List<Location> mpboatSpawns) { this.mpboatSpawns = mpboatSpawns; }
+    
+    // Helper method to add a single boat spawn
+    public void addMpboatSpawn(Location location) {
+        if (this.mpboatSpawns == null) {
+            this.mpboatSpawns = new ArrayList<>();
+        }
+        this.mpboatSpawns.add(location);
+    }
+    
+    // Helper method to get boat spawn by index (0-9)
+    public Location getMpboatSpawn(int index) {
+        if (mpboatSpawns == null || index < 0 || index >= mpboatSpawns.size()) {
+            return null;
+        }
+        return mpboatSpawns.get(index);
+    }
+
     // Helper methods
     public void updateLastEdited() {
         this.lastEdited = LocalDateTime.now();
