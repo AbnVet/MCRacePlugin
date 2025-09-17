@@ -77,29 +77,57 @@ public class SetupListener implements Listener {
     }
     
     private void spawnRaceBoat(Player player, Course course) {
-        plugin.raceDebugLog("🚤 SPAWNING BOAT - Player: " + player.getName() + ", Course: " + course.getName());
+        plugin.raceDebugLog("🚤 SPAWNING RACE BOAT - Player: " + player.getName() + ", Course: " + course.getName());
         
-        if (course.getSpboatspawn() == null) {
-            player.sendMessage("§cBoat spawn not set for this course!");
+        // Check if course is ready for racing
+        if (!plugin.getRaceManager().isRaceReady(course)) {
+            player.sendMessage("§cCourse not ready for racing! Missing required components.");
+            plugin.raceDebugLog("❌ Course not ready - missing components");
             return;
         }
         
-        Location spawnLoc = course.getSpboatspawn().clone();
-        spawnLoc.setX(spawnLoc.getBlockX() + 0.5);
-        spawnLoc.setZ(spawnLoc.getBlockZ() + 0.5);
-        spawnLoc.add(0, 1.0, 0);
+        // Check if player already has active race
+        if (plugin.getRaceManager().hasActiveRace(player.getUniqueId())) {
+            player.sendMessage("§cYou already have an active race!");
+            plugin.raceDebugLog("❌ Player already has active race");
+            return;
+        }
         
-        plugin.raceDebugLog("🚤 Boat spawn location: " + spawnLoc.getWorld().getName() + " " + 
-                           spawnLoc.getX() + "," + spawnLoc.getY() + "," + spawnLoc.getZ() + 
-                           " yaw:" + spawnLoc.getYaw() + " pitch:" + spawnLoc.getPitch());
+        // Check if course is occupied
+        if (plugin.getRaceManager().isCourseOccupied(course.getName())) {
+            player.sendMessage("§eTrack in use, please wait.");
+            plugin.raceDebugLog("❌ Course occupied");
+            teleportToLobby(player, course);
+            return;
+        }
         
-        org.bukkit.entity.Boat boat = (org.bukkit.entity.Boat) spawnLoc.getWorld().spawnEntity(spawnLoc, org.bukkit.entity.EntityType.OAK_BOAT);
-        boat.addPassenger(player);
+        // Start the race
+        com.bocrace.race.ActiveRace race = plugin.getRaceManager().startRace(player, course);
+        if (race == null) {
+            player.sendMessage("§cFailed to start race!");
+            plugin.raceDebugLog("❌ Race start failed");
+            return;
+        }
         
-        player.sendMessage("§a🚤 Boat spawned! You're ready to race!");
+        // Spawn boat with PDC tracking
+        org.bukkit.entity.Boat boat = plugin.getBoatManager().spawnRaceBoat(player, course, race);
+        if (boat == null) {
+            plugin.getRaceManager().endRace(player.getUniqueId(), com.bocrace.race.ActiveRace.State.DQ, "boat_spawn_failed");
+            player.sendMessage("§cFailed to spawn boat!");
+            plugin.raceDebugLog("❌ Boat spawn failed");
+            return;
+        }
+        
+        // Success messages and sounds
+        player.sendMessage("§e⚡ Get ready to race! Cross the start line to begin timing.");
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f);
         
-        plugin.raceDebugLog("✅ BOAT SPAWNED SUCCESSFULLY - UUID: " + boat.getUniqueId());
+        // Record course usage
+        course.recordUsage(player.getName());
+        plugin.getStorageManager().saveCourse(course);
+        
+        plugin.raceDebugLog("✅ RACE STARTED SUCCESSFULLY - Player: " + player.getName() + 
+                           ", Course: " + course.getName() + ", Boat: " + boat.getUniqueId());
     }
     
     private void teleportToLobby(Player player, Course course) {

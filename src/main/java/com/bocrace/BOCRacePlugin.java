@@ -78,11 +78,9 @@ public class BOCRacePlugin extends JavaPlugin {
         
         // Register event listeners
         getServer().getPluginManager().registerEvents(new SetupListener(this), this);
-        // TEMPORARILY DISABLE RACE LISTENERS TO AVOID CONFLICTS
-        // getServer().getPluginManager().registerEvents(new StartButtonListener(this, boatManager, teleportUtil), this);
-        // getServer().getPluginManager().registerEvents(new RaceLineListener(this, boatManager, teleportUtil), this);
-        // getServer().getPluginManager().registerEvents(new RaceCleanupListener(this, boatManager, teleportUtil), this);
-        debugLog("Setup listener registered successfully (race listeners disabled for debugging)");
+        getServer().getPluginManager().registerEvents(new RaceLineListener(this, boatManager, teleportUtil), this);
+        getServer().getPluginManager().registerEvents(new RaceCleanupListener(this, boatManager, teleportUtil), this);
+        debugLog("All event listeners registered successfully");
 
         getLogger().info("BOCRacePlugin has been enabled!");
     }

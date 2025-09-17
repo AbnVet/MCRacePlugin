@@ -97,6 +97,9 @@ public class RaceLineListener implements Listener {
         plugin.raceDebugLog("Checking start line crossing - Start1: " + formatLocation(course.getSpstart1()) + 
                            ", Start2: " + formatLocation(course.getSpstart2()));
         
+        // Add detailed zone debug info
+        plugin.raceDebugLog(LineDetection.getStartZoneDescription(to, course.getSpstart1(), course.getSpstart2()));
+        
         boolean crossedStart = LineDetection.crossedStartLine(from, to, course.getSpstart1(), course.getSpstart2());
         
         plugin.raceDebugLog("Start line check result: " + crossedStart);
@@ -140,6 +143,9 @@ public class RaceLineListener implements Listener {
         plugin.raceDebugLog("Checking finish line entry - Finish1: " + formatLocation(course.getSpfinish1()) + 
                            ", Finish2: " + formatLocation(course.getSpfinish2()) + 
                            ", Boat at: " + formatLocation(boatLocation));
+        
+        // Add detailed zone debug info
+        plugin.raceDebugLog(LineDetection.getFinishZoneDescription(boatLocation, course.getSpfinish1(), course.getSpfinish2()));
         
         boolean enteredFinish = LineDetection.enteredFinishZone(boatLocation, course.getSpfinish1(), course.getSpfinish2());
         

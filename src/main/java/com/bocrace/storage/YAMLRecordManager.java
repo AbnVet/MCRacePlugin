@@ -323,8 +323,75 @@ public class YAMLRecordManager implements RecordManager {
     
     @Override
     public String getPlayerFavoriteCourse(String player) {
-        // This would require analyzing all course files
-        // For now, return null - can be implemented later if needed
-        return null;
+        try {
+            // Count races per course for this player
+            Map<String, Integer> courseCount = new HashMap<>();
+            
+            // Check both singleplayer and multiplayer course folders
+            File spCoursesFolder = new File(plugin.getDataFolder(), "data/singleplayer/courses");
+            File mpCoursesFolder = new File(plugin.getDataFolder(), "data/multiplayer/courses");
+            
+            // Count singleplayer courses
+            if (spCoursesFolder.exists()) {
+                for (File courseFile : spCoursesFolder.listFiles()) {
+                    if (courseFile.getName().endsWith("_records.yml")) {
+                        String courseName = courseFile.getName().replace("_records.yml", "");
+                        int playerRaces = countPlayerRacesInFile(courseFile, player);
+                        if (playerRaces > 0) {
+                            courseCount.put(courseName, courseCount.getOrDefault(courseName, 0) + playerRaces);
+                        }
+                    }
+                }
+            }
+            
+            // Count multiplayer courses
+            if (mpCoursesFolder.exists()) {
+                for (File courseFile : mpCoursesFolder.listFiles()) {
+                    if (courseFile.getName().endsWith("_records.yml")) {
+                        String courseName = courseFile.getName().replace("_records.yml", "");
+                        int playerRaces = countPlayerRacesInFile(courseFile, player);
+                        if (playerRaces > 0) {
+                            courseCount.put(courseName, courseCount.getOrDefault(courseName, 0) + playerRaces);
+                        }
+                    }
+                }
+            }
+            
+            // Find course with most races
+            String favoriteCourse = null;
+            int maxRaces = 0;
+            for (Map.Entry<String, Integer> entry : courseCount.entrySet()) {
+                if (entry.getValue() > maxRaces) {
+                    maxRaces = entry.getValue();
+                    favoriteCourse = entry.getKey();
+                }
+            }
+            
+            return favoriteCourse;
+            
+        } catch (Exception e) {
+            plugin.getLogger().warning("Error calculating favorite course for " + player + ": " + e.getMessage());
+            return null;
+        }
+    }
+    
+    private int countPlayerRacesInFile(File courseFile, String player) {
+        try {
+            FileConfiguration config = YamlConfiguration.loadConfiguration(courseFile);
+            int count = 0;
+            
+            if (config.contains("records")) {
+                for (String key : config.getConfigurationSection("records").getKeys(false)) {
+                    String recordPlayer = config.getString("records." + key + ".player");
+                    if (player.equals(recordPlayer)) {
+                        count++;
+                    }
+                }
+            }
+            
+            return count;
+        } catch (Exception e) {
+            return 0;
+        }
     }
 }
