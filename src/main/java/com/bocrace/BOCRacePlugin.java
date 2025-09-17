@@ -7,8 +7,10 @@ import com.bocrace.listener.SetupListener;
 import com.bocrace.listener.StartButtonListener;
 import com.bocrace.listener.RaceLineListener;
 import com.bocrace.listener.RaceCleanupListener;
+import com.bocrace.listener.MultiplayerButtonListener;
 import com.bocrace.storage.StorageManager;
 import com.bocrace.race.RaceManager;
+import com.bocrace.race.MultiplayerRaceManager;
 import com.bocrace.storage.RecordManager;
 import com.bocrace.storage.YAMLRecordManager;
 import com.bocrace.util.PDCKeys;
@@ -32,6 +34,7 @@ public class BOCRacePlugin extends JavaPlugin {
     private StorageManager storageManager;
     private RecordManager recordManager;
     private RaceManager raceManager;
+    private MultiplayerRaceManager multiplayerRaceManager;
     
     // Race utilities
     private PDCKeys pdcKeys;
@@ -60,9 +63,10 @@ public class BOCRacePlugin extends JavaPlugin {
         // Initialize record manager
         recordManager = new YAMLRecordManager(this);
         
-        // Initialize race manager
+        // Initialize race managers
         raceManager = new RaceManager(this);
-        debugLog("Race manager initialized successfully");
+        multiplayerRaceManager = new MultiplayerRaceManager(this);
+        debugLog("Race managers initialized successfully");
         
         // Initialize race utilities
         pdcKeys = new PDCKeys(this);
@@ -83,6 +87,7 @@ public class BOCRacePlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new SetupListener(this), this);
         getServer().getPluginManager().registerEvents(new RaceLineListener(this, boatManager, teleportUtil), this);
         getServer().getPluginManager().registerEvents(new RaceCleanupListener(this, boatManager, teleportUtil), this);
+        getServer().getPluginManager().registerEvents(new MultiplayerButtonListener(this), this);
         debugLog("All event listeners registered successfully");
 
         getLogger().info("BOCRacePlugin has been enabled!");
@@ -98,6 +103,12 @@ public class BOCRacePlugin extends JavaPlugin {
             if (playersRescued > 0) {
                 getLogger().info("🛡️ Emergency rescued " + playersRescued + " racing players");
             }
+        }
+        
+        // Cleanup multiplayer races
+        if (multiplayerRaceManager != null) {
+            multiplayerRaceManager.shutdown();
+            getLogger().info("🏁 Cleaned up all multiplayer races");
         }
         
         // Cleanup all race boats
@@ -166,6 +177,10 @@ public class BOCRacePlugin extends JavaPlugin {
     
     public RaceManager getRaceManager() {
         return raceManager;
+    }
+    
+    public MultiplayerRaceManager getMultiplayerRaceManager() {
+        return multiplayerRaceManager;
     }
     
     public PDCKeys getPdcKeys() {

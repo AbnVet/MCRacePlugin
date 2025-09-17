@@ -4,6 +4,7 @@ import com.bocrace.BOCRacePlugin;
 import com.bocrace.model.Course;
 import com.bocrace.model.CourseType;
 import com.bocrace.race.ActiveRace;
+import com.bocrace.race.MultiplayerRace;
 import com.bocrace.util.BoatManager;
 import com.bocrace.util.LineDetection;
 import com.bocrace.util.TeleportUtil;
@@ -58,35 +59,65 @@ public class RaceLineListener implements Listener {
             return;
         }
         
-        // Get the active race
-        ActiveRace race = plugin.getRaceManager().getActiveRace(playerUuid);
-        if (race == null) {
-            plugin.raceDebugLog("Race boat move - no active race found for player " + playerUuid);
-            return;
-        }
-        
-        // Get the course
-        Course course = plugin.getStorageManager().getCourse(race.getCourseName());
-        if (course == null || course.getType() != CourseType.SINGLEPLAYER) {
-            plugin.raceDebugLog("Race boat move - course not found or wrong type: " + race.getCourseName());
-            return;
-        }
-        
         Location from = event.getFrom();
         Location to = event.getTo();
         
-        plugin.raceDebugLog("Race boat moving - Player: " + race.getPlayerName() + 
-                           ", State: " + race.getState() + 
-                           ", From: " + formatLocation(from) + 
-                           ", To: " + formatLocation(to));
-        
-        // Handle different race states
-        if (race.getState() == ActiveRace.State.ARMED) {
-            handleStartLineDetection(boat, race, course, from, to);
-        } else if (race.getState() == ActiveRace.State.RUNNING) {
-            handleFinishLineDetection(boat, race, course, to);
-            updateRaceTimer(boat, race);
+        // Check for singleplayer race first
+        ActiveRace race = plugin.getRaceManager().getActiveRace(playerUuid);
+        if (race != null) {
+            // Handle singleplayer race
+            Course course = plugin.getStorageManager().getCourse(race.getCourseName());
+            if (course == null || course.getType() != CourseType.SINGLEPLAYER) {
+                plugin.raceDebugLog("Race boat move - singleplayer course not found or wrong type: " + race.getCourseName());
+                return;
+            }
+            
+            plugin.raceDebugLog("Singleplayer race boat moving - Player: " + race.getPlayerName() + 
+                               ", State: " + race.getState() + 
+                               ", From: " + formatLocation(from) + 
+                               ", To: " + formatLocation(to));
+            
+            // Handle different race states
+            if (race.getState() == ActiveRace.State.ARMED) {
+                handleStartLineDetection(boat, race, course, from, to);
+            } else if (race.getState() == ActiveRace.State.RUNNING) {
+                handleFinishLineDetection(boat, race, course, to);
+                updateRaceTimer(boat, race);
+            }
+            return;
         }
+        
+        // Check for multiplayer race
+        MultiplayerRace mpRace = plugin.getMultiplayerRaceManager().getRaceByPlayer(playerUuid);
+        if (mpRace != null) {
+            // Handle multiplayer race
+            Course course = mpRace.getCourse();
+            if (course == null || course.getType() != CourseType.MULTIPLAYER) {
+                plugin.raceDebugLog("Race boat move - multiplayer course not found or wrong type");
+                return;
+            }
+            
+            Player player = Bukkit.getPlayer(playerUuid);
+            if (player == null) {
+                plugin.raceDebugLog("Race boat move - multiplayer player not found: " + playerUuid);
+                return;
+            }
+            
+            plugin.raceDebugLog("Multiplayer race boat moving - Player: " + player.getName() + 
+                               ", Race State: " + mpRace.getState() + 
+                               ", From: " + formatLocation(from) + 
+                               ", To: " + formatLocation(to));
+            
+            // Handle multiplayer race states
+            if (mpRace.getState() == MultiplayerRace.State.RUNNING) {
+                handleMultiplayerStartLineDetection(boat, mpRace, course, player, from, to);
+                handleMultiplayerFinishLineDetection(boat, mpRace, course, player, to);
+                updateMultiplayerRaceTimer(boat, mpRace, player);
+            }
+            return;
+        }
+        
+        plugin.raceDebugLog("Race boat move - no active race found for player " + playerUuid);
     }
     
     /**
@@ -273,6 +304,71 @@ public class RaceLineListener implements Listener {
         }
         
         return null;
+    }
+    
+    /**
+     * Handle multiplayer start line detection
+     */
+    private void handleMultiplayerStartLineDetection(Boat boat, MultiplayerRace race, Course course, Player player, Location from, Location to) {
+        // Check if player has already started timing
+        MultiplayerRace.PlayerResult result = race.getPlayers().get(player.getUniqueId());
+        if (result == null || result.getStartTimeMs() == 0) {
+            return; // Player not in race or timing not started
+        }
+        
+        // Check if player crossed start line
+        boolean crossedStart = LineDetection.crossedStartLine(from, to, course.getSpstart1(), course.getSpstart2());
+        if (crossedStart) {
+            plugin.raceDebugLog("🏁 Multiplayer start line crossed by " + player.getName());
+            
+            // Play start effects
+            soundEffectManager.playRaceStartEffects(player, to, course);
+            player.sendMessage("§a§l🏁 GO! §aTimer started!");
+        }
+    }
+    
+    /**
+     * Handle multiplayer finish line detection
+     */
+    private void handleMultiplayerFinishLineDetection(Boat boat, MultiplayerRace race, Course course, Player player, Location boatLocation) {
+        // Check if player has finished already
+        MultiplayerRace.PlayerResult result = race.getPlayers().get(player.getUniqueId());
+        if (result == null || result.isFinished() || result.isDisqualified()) {
+            return;
+        }
+        
+        // Check if entered finish zone
+        boolean enteredFinish = LineDetection.enteredFinishZone(boatLocation, course.getSpfinish1(), course.getSpfinish2());
+        if (enteredFinish) {
+            plugin.raceDebugLog("🏆 Multiplayer finish line reached by " + player.getName());
+            
+            // Finish the player through race manager
+            plugin.getMultiplayerRaceManager().finishPlayer(player.getUniqueId());
+        }
+    }
+    
+    /**
+     * Update multiplayer race timer display
+     */
+    private void updateMultiplayerRaceTimer(Boat boat, MultiplayerRace race, Player player) {
+        // Get player's current race time
+        long raceTimeMs = System.currentTimeMillis() - race.getRaceStartTimeMs();
+        
+        // Format time for display
+        long seconds = raceTimeMs / 1000;
+        long minutes = seconds / 60;
+        seconds = seconds % 60;
+        long milliseconds = raceTimeMs % 1000;
+        
+        String timeDisplay;
+        if (minutes > 0) {
+            timeDisplay = String.format("§6⏱ %d:%02d.%03d", minutes, seconds, milliseconds);
+        } else {
+            timeDisplay = String.format("§6⏱ %d.%03d", seconds, milliseconds);
+        }
+        
+        // Send to action bar for smooth updates
+        player.sendActionBar(timeDisplay);
     }
     
     /**

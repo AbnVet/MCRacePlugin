@@ -26,7 +26,41 @@ public class BoatManager {
     }
     
     /**
-     * Spawn a race boat for a player at the specified course
+     * Spawn a race boat for a player at the specified location (multiplayer)
+     */
+    public Boat spawnRaceBoat(Player player, Location spawnLocation) {
+        if (spawnLocation == null) {
+            plugin.debugLog("Cannot spawn boat - no spawn location provided");
+            return null;
+        }
+        
+        // Use exact spawn location including yaw/pitch for proper direction
+        Location boatSpawn = spawnLocation.clone();
+        boatSpawn.setX(spawnLocation.getBlockX() + 0.5); // Center X
+        boatSpawn.setZ(spawnLocation.getBlockZ() + 0.5); // Center Z
+        boatSpawn.add(0, 1.0, 0); // Add Y offset
+        
+        plugin.debugLog("Spawning multiplayer race boat for " + player.getName() + " at " + 
+                       boatSpawn.getWorld().getName() + " " + 
+                       boatSpawn.getBlockX() + "," + boatSpawn.getBlockY() + "," + boatSpawn.getBlockZ());
+        
+        // Spawn the boat
+        Boat boat = (Boat) boatSpawn.getWorld().spawnEntity(boatSpawn, EntityType.OAK_BOAT);
+        
+        // Mark as race boat
+        boat.getPersistentDataContainer().set(pdcKeys.raceBoat, PersistentDataType.BOOLEAN, true);
+        boat.getPersistentDataContainer().set(pdcKeys.playerUuid, PersistentDataType.STRING, player.getUniqueId().toString());
+        
+        // Teleport player into boat
+        player.teleport(boatSpawn);
+        boat.addPassenger(player);
+        
+        plugin.debugLog("✅ Multiplayer race boat spawned successfully for " + player.getName());
+        return boat;
+    }
+    
+    /**
+     * Spawn a race boat for a player at the specified course (singleplayer)
      */
     public Boat spawnRaceBoat(Player player, Course course, ActiveRace race) {
         Location spawnLocation = course.getSpboatspawn();

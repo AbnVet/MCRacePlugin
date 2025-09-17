@@ -2,6 +2,7 @@ D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\BOCRacePlugin.java
 D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\command\BOCRaceCommand.java
 D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\command\RaceStatsCommand.java
 D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\config\ConfigManager.java
+D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\listener\MultiplayerButtonListener.java
 D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\listener\RaceCleanupListener.java
 D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\listener\RaceLineListener.java
 D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\listener\SetupListener.java
@@ -10,6 +11,8 @@ D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\model\Course.java
 D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\model\CourseType.java
 D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\model\RaceRecord.java
 D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\race\ActiveRace.java
+D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\race\MultiplayerRace.java
+D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\race\MultiplayerRaceManager.java
 D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\race\RaceManager.java
 D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\storage\RecordManager.java
 D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\storage\StorageManager.java

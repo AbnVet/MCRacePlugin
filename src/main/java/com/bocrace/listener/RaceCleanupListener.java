@@ -35,14 +35,27 @@ public class RaceCleanupListener implements Listener {
         Player player = event.getPlayer();
         UUID playerUuid = player.getUniqueId();
         
-        // Check if player has an active race
+        // Check if player has an active singleplayer race
         ActiveRace race = plugin.getRaceManager().getActiveRace(playerUuid);
-        if (race == null) return;
+        if (race != null) {
+            plugin.debugLog("Player disconnected during singleplayer race - Player: " + player.getName() + 
+                           ", Course: " + race.getCourseName() + 
+                           ", State: " + race.getState() + 
+                           ", Duration: " + race.getCurrentDurationMs() + "ms");
+            handleSingleplayerDisconnect(player, race);
+            return;
+        }
         
-        plugin.debugLog("Player disconnected during race - Player: " + player.getName() + 
-                       ", Course: " + race.getCourseName() + 
-                       ", State: " + race.getState() + 
-                       ", Duration: " + race.getCurrentDurationMs() + "ms");
+        // Check if player has an active multiplayer race
+        if (plugin.getMultiplayerRaceManager().isPlayerInRace(playerUuid)) {
+            plugin.debugLog("Player disconnected during multiplayer race - Player: " + player.getName());
+            handleMultiplayerDisconnect(player);
+            return;
+        }
+    }
+    
+    private void handleSingleplayerDisconnect(Player player, ActiveRace race) {
+        UUID playerUuid = player.getUniqueId();
         
         // Find and remove the race boat
         Boat boat = boatManager.findRaceBoatByPlayer(playerUuid);
@@ -71,6 +84,21 @@ public class RaceCleanupListener implements Listener {
         }
         
         plugin.debugLog("Race cleanup completed for disconnected player: " + player.getName());
+    }
+    
+    private void handleMultiplayerDisconnect(Player player) {
+        UUID playerUuid = player.getUniqueId();
+        
+        // Find and remove the race boat
+        Boat boat = boatManager.findRaceBoatByPlayer(playerUuid);
+        if (boat != null) {
+            boatManager.removeRaceBoat(boat, "player_disconnected");
+        }
+        
+        // Handle disconnect through multiplayer race manager
+        plugin.getMultiplayerRaceManager().handlePlayerDisconnect(playerUuid);
+        
+        plugin.debugLog("Multiplayer race cleanup completed for disconnected player: " + player.getName());
     }
     
     @EventHandler
