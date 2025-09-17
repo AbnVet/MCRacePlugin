@@ -8,6 +8,7 @@ import com.bocrace.listener.StartButtonListener;
 import com.bocrace.listener.RaceLineListener;
 import com.bocrace.listener.RaceCleanupListener;
 import com.bocrace.listener.MultiplayerButtonListener;
+import com.bocrace.listener.RaceProtectionListener;
 import com.bocrace.storage.StorageManager;
 import com.bocrace.race.RaceManager;
 import com.bocrace.race.MultiplayerRaceManager;
@@ -89,6 +90,7 @@ public class BOCRacePlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new RaceLineListener(this, boatManager, teleportUtil), this);
         getServer().getPluginManager().registerEvents(new RaceCleanupListener(this, boatManager, teleportUtil), this);
         getServer().getPluginManager().registerEvents(new MultiplayerButtonListener(this), this);
+        getServer().getPluginManager().registerEvents(new RaceProtectionListener(this), this);
         debugLog("All event listeners registered successfully");
 
         getLogger().info("BOCRacePlugin has been enabled!");

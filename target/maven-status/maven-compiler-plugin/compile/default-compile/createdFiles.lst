@@ -4,6 +4,7 @@ com\bocrace\util\PDCKeys.class
 com\bocrace\storage\StorageManager.class
 com\bocrace\listener\MultiplayerButtonListener$ButtonType.class
 com\bocrace\BOCRacePlugin$SetupMode.class
+com\bocrace\listener\RaceProtectionListener$1.class
 com\bocrace\race\ActiveRace.class
 com\bocrace\model\CourseType.class
 com\bocrace\listener\RaceLineListener.class

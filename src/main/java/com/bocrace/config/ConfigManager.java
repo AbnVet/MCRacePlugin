@@ -96,6 +96,21 @@ public class ConfigManager {
             config.set("multiplayer.announcements.race-started", "&aRace started on &6{course}&a! &7({players} racers)");
             config.set("multiplayer.announcements.race-finished", "&6Race completed on &a{course}&6! Results posted.");
             config.set("multiplayer.announcements.race-timeout", "&cRace on &6{course} &chas timed out! Unfinished players disqualified.");
+            
+            // Player protection settings
+            config.set("multiplayer.player-protection.enabled", true);
+            config.set("multiplayer.player-protection.prevent-mob-damage", true);
+            config.set("multiplayer.player-protection.prevent-pvp", true);
+            config.set("multiplayer.player-protection.prevent-explosion-damage", true);
+            config.set("multiplayer.player-protection.prevent-drowning", true);
+            config.set("multiplayer.player-protection.prevent-fall-damage", false); // Allow for course obstacles
+            config.set("multiplayer.player-protection.prevent-item-drops", true);
+            config.set("multiplayer.player-protection.death-disqualifies", true);
+            
+            // Race effects
+            config.set("multiplayer.effects.night-vision.enabled", true);
+            config.set("multiplayer.effects.night-vision.duration", 600); // 10 minutes in seconds
+            
             configUpdated = true;
         }
         

@@ -262,7 +262,8 @@ public class SetupListener implements Listener {
         String action = setupMode.getAction();
         
         // For boat spawn and lobby locations, use player's looking direction
-        if (action.equals("setboatspawn") || action.equals("setmainlobby") || action.equals("setcourselobby")) {
+        if (action.equals("setboatspawn") || action.equals("setmainlobby") || action.equals("setcourselobby") ||
+            action.equals("setmpracelobbyspawn") || action.startsWith("setmpboatspawn")) {
             location.setYaw(player.getLocation().getYaw());
             location.setPitch(player.getLocation().getPitch());
             plugin.debugLog("Captured player direction for " + action + " - Yaw: " + location.getYaw() + ", Pitch: " + location.getPitch());

@@ -117,6 +117,9 @@ public class MultiplayerRaceManager {
         // Play join effects
         plugin.getSoundEffectManager().playRaceStartEffects(player, boatSpawn, course);
         
+        // Apply race effects (night vision, etc.)
+        applyRaceEffects(player);
+        
         player.sendMessage("§a§l🏁 Joined multiplayer race! §aWaiting for race leader to start...");
         plugin.multiplayerDebugLog("Player " + player.getName() + " joined race " + race.getRaceId());
         
@@ -235,11 +238,12 @@ public class MultiplayerRaceManager {
                 plugin.getBoatManager().removeRaceBoat(boat, "race_finished");
             }
             
-            // Teleport player back to race lobby after delay
+            // Remove race effects and teleport player back to race lobby after delay
             new BukkitRunnable() {
                 @Override
                 public void run() {
                     if (player.isOnline()) {
+                        removeRaceEffects(player);
                         Location lobbySpawn = race.getCourse().getMpraceLobbySpawn();
                         if (lobbySpawn != null) {
                             player.teleport(lobbySpawn);
@@ -536,6 +540,56 @@ public class MultiplayerRaceManager {
     
     public int getActiveRaceCount() {
         return activeRaces.size();
+    }
+    
+    /**
+     * Apply race effects to a player (night vision, etc.)
+     */
+    private void applyRaceEffects(Player player) {
+        // Find the protection listener and apply effects
+        try {
+            // Use reflection to get the protection listener or call directly
+            plugin.getServer().getPluginManager().callEvent(new org.bukkit.event.Event() {
+                @Override
+                public org.bukkit.event.HandlerList getHandlers() {
+                    return new org.bukkit.event.HandlerList();
+                }
+                
+                public static org.bukkit.event.HandlerList getHandlerList() {
+                    return new org.bukkit.event.HandlerList();
+                }
+            });
+            
+            // Apply night vision directly here for now
+            if (plugin.getConfig().getBoolean("multiplayer.effects.night-vision.enabled", true)) {
+                int durationSeconds = plugin.getConfig().getInt("multiplayer.effects.night-vision.duration", 600);
+                int durationTicks = durationSeconds * 20;
+                
+                org.bukkit.potion.PotionEffect nightVision = new org.bukkit.potion.PotionEffect(
+                    org.bukkit.potion.PotionEffectType.NIGHT_VISION,
+                    durationTicks,
+                    0, // Amplifier 0 = lowest level
+                    false, // Not ambient
+                    false  // Hide particles
+                );
+                
+                player.addPotionEffect(nightVision);
+                player.sendMessage("§e✨ Night vision applied for better racing visibility!");
+                plugin.multiplayerDebugLog("Applied night vision to " + player.getName());
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("Failed to apply race effects: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Remove race effects from a player
+     */
+    private void removeRaceEffects(Player player) {
+        if (player.hasPotionEffect(org.bukkit.potion.PotionEffectType.NIGHT_VISION)) {
+            player.removePotionEffect(org.bukkit.potion.PotionEffectType.NIGHT_VISION);
+            plugin.multiplayerDebugLog("Removed night vision from " + player.getName());
+        }
     }
     
     /**
