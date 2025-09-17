@@ -3,6 +3,7 @@ package com.bocrace.race;
 import com.bocrace.BOCRacePlugin;
 import com.bocrace.model.Course;
 import com.bocrace.model.CourseType;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
 import java.util.Map;
@@ -91,8 +92,9 @@ public class RaceManager {
             return null;
         }
         
-        // Create new active race
-        ActiveRace race = new ActiveRace(player.getUniqueId(), player.getName(), course.getName(), course.getType());
+        // Create new active race with safety location
+        Location safeLocation = player.getLocation().clone();
+        ActiveRace race = new ActiveRace(player.getUniqueId(), player.getName(), course.getName(), course.getType(), safeLocation);
         
         // Register the race
         activeRaces.put(player.getUniqueId(), race);

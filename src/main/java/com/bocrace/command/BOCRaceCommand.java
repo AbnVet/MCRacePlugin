@@ -573,23 +573,27 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         
         Player player = (Player) sender;
         
-        // Try to teleport to start button first, then boat spawn
+        // Use lobby priority system: mainLobby first, then courseLobby (required)
         Location teleportLocation = null;
-        if (course.getSpstartbutton() != null) {
-            teleportLocation = course.getSpstartbutton();
-            plugin.getLogger().info("[DEBUG] Teleporting to start button location");
-        } else if (course.getSpboatspawn() != null) {
-            teleportLocation = course.getSpboatspawn();
-            plugin.getLogger().info("[DEBUG] Teleporting to boat spawn location (no start button)");
+        String locationName = "";
+        
+        if (course.getSpmainlobby() != null) {
+            teleportLocation = course.getSpmainlobby();
+            locationName = "main lobby";
+            plugin.debugLog("Teleporting to main lobby location");
+        } else if (course.getSpcourselobby() != null) {
+            teleportLocation = course.getSpcourselobby();
+            locationName = "course lobby";
+            plugin.debugLog("Teleporting to course lobby location (no main lobby set)");
         } else {
-            sender.sendMessage("§cCourse '" + courseName + "' has no setup locations! Please set up the course first.");
-            plugin.getLogger().info("[DEBUG] Tp command failed - no setup locations for course: " + courseName);
+            sender.sendMessage("§cCourse '" + courseName + "' has no lobby locations set! Please set up courseLobby (required) or mainLobby.");
+            plugin.debugLog("Tp command failed - no lobby locations for course: " + courseName);
             return true;
         }
         
         player.teleport(teleportLocation);
-        sender.sendMessage("§aTeleported to course '" + courseName + "'!");
-        plugin.getLogger().info("[DEBUG] Player teleported to course: " + courseName + " at location: " + teleportLocation.toString());
+        sender.sendMessage("§aTeleported to " + locationName + " for course '" + courseName + "'!");
+        plugin.debugLog("Player teleported to " + locationName + " for course: " + courseName + " at " + teleportLocation.getWorld().getName() + " " + teleportLocation.getBlockX() + "," + teleportLocation.getBlockY() + "," + teleportLocation.getBlockZ());
         return true;
     }
     

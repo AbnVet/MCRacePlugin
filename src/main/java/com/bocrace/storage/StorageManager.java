@@ -32,6 +32,7 @@ public class StorageManager {
     }
     
     public void loadCourses() {
+        plugin.debugLog("Starting course reload - clearing " + courses.size() + " courses from memory");
         courses.clear();
         
         // Create courses directory structure
@@ -45,8 +46,10 @@ public class StorageManager {
         
         if (courses.isEmpty()) {
             plugin.getLogger().info("No courses found in courses/singleplayer/ or courses/multiplayer/");
+            plugin.debugLog("Course reload complete - 0 courses loaded");
         } else {
             plugin.getLogger().info("Loaded " + courses.size() + " courses");
+            plugin.debugLog("Course reload complete - " + courses.size() + " courses loaded: " + String.join(", ", courses.keySet()));
         }
     }
     

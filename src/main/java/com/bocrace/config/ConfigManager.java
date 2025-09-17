@@ -121,6 +121,14 @@ public class ConfigManager {
         return config.getBoolean("debug", false);
     }
     
+    public boolean isRaceDebugEnabled() {
+        return config.getBoolean("debug-race", false);
+    }
+    
+    public boolean isSetupDebugEnabled() {
+        return config.getBoolean("debug-setup", false);
+    }
+    
     public String getPrefixColor() {
         return config.getString("colors.prefix", "GOLD");
     }

@@ -15,8 +15,10 @@ colors:
   prefix: GOLD
   broadcast: AQUA
 
-# Debug mode
+# Debug modes
 debug: false
+debug-race: false    # Specific debug for race mechanics (button clicks, line detection, etc.)
+debug-setup: false  # Specific debug for course setup commands
 
 # Configuration version (for future updates)
 config-version: 1

@@ -1,6 +1,7 @@
 package com.bocrace.race;
 
 import com.bocrace.model.CourseType;
+import org.bukkit.Location;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -23,17 +24,21 @@ public class ActiveRace {
     private final CourseType courseType;
     private final LocalDateTime startTime;
     
+    // Safety: Save player's location before race starts
+    private final Location preRaceLocation;
+    
     private UUID boatUuid;
     private State state;
     private long startNanoTime;
     private long endNanoTime;
     private String dqReason;
     
-    public ActiveRace(UUID playerUuid, String playerName, String courseName, CourseType courseType) {
+    public ActiveRace(UUID playerUuid, String playerName, String courseName, CourseType courseType, Location preRaceLocation) {
         this.playerUuid = playerUuid;
         this.playerName = playerName;
         this.courseName = courseName;
         this.courseType = courseType;
+        this.preRaceLocation = preRaceLocation.clone(); // Clone to prevent modification
         this.startTime = LocalDateTime.now();
         this.state = State.ARMED;
     }
@@ -44,6 +49,7 @@ public class ActiveRace {
     public String getCourseName() { return courseName; }
     public CourseType getCourseType() { return courseType; }
     public LocalDateTime getStartTime() { return startTime; }
+    public Location getPreRaceLocation() { return preRaceLocation; }
     public UUID getBoatUuid() { return boatUuid; }
     public State getState() { return state; }
     public long getStartNanoTime() { return startNanoTime; }
