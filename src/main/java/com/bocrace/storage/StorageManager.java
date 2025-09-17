@@ -191,6 +191,22 @@ public class StorageManager {
         }
         course.setLastUsedBy(config.getString("lastUsedBy"));
         
+        // Load per-course settings (optional)
+        if (config.contains("sounds-enabled")) {
+            course.setSoundsEnabled(config.getBoolean("sounds-enabled"));
+        }
+        if (config.contains("particles-enabled")) {
+            course.setParticlesEnabled(config.getBoolean("particles-enabled"));
+        }
+        if (config.contains("custom-messages") && config.isConfigurationSection("custom-messages")) {
+            Map<String, String> customMessages = new HashMap<>();
+            ConfigurationSection messagesSection = config.getConfigurationSection("custom-messages");
+            for (String key : messagesSection.getKeys(false)) {
+                customMessages.put(key, messagesSection.getString(key));
+            }
+            course.setCustomMessages(customMessages);
+        }
+        
         // Load data map
         Map<String, Object> data = new HashMap<>();
         if (config.contains("data") && config.isConfigurationSection("data")) {
@@ -253,6 +269,19 @@ public class StorageManager {
                 config.set("lastUsed", course.getLastUsed().toString());
             }
             config.set("lastUsedBy", course.getLastUsedBy());
+            
+            // Save per-course settings (optional)
+            if (course.getSoundsEnabled() != null) {
+                config.set("sounds-enabled", course.getSoundsEnabled());
+            }
+            if (course.getParticlesEnabled() != null) {
+                config.set("particles-enabled", course.getParticlesEnabled());
+            }
+            if (course.getCustomMessages() != null && !course.getCustomMessages().isEmpty()) {
+                for (Map.Entry<String, String> entry : course.getCustomMessages().entrySet()) {
+                    config.set("custom-messages." + entry.getKey(), entry.getValue());
+                }
+            }
             
             // Save data map
             for (Map.Entry<String, Object> entry : course.getData().entrySet()) {

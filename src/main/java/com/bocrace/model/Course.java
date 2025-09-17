@@ -1,5 +1,6 @@
 package com.bocrace.model;
 
+import com.bocrace.BOCRacePlugin;
 import org.bukkit.Location;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -35,12 +36,18 @@ public class Course {
     private LocalDateTime lastUsed;
     private String lastUsedBy;
     
+    // Per-course settings (optional overrides)
+    private Boolean soundsEnabled;      // null = use global config
+    private Boolean particlesEnabled;   // null = use global config
+    private Map<String, String> customMessages; // null = use global config
+    
     
     // Default constructor
     public Course() {
         this.data = new HashMap<>();
         this.createdOn = LocalDateTime.now();
         this.lastEdited = LocalDateTime.now();
+        this.customMessages = new HashMap<>();
     }
     
     // Constructor with required fields
@@ -174,6 +181,42 @@ public class Course {
     
     public String getDisplayName() {
         return name + " (" + type + ")";
+    }
+    
+    // Per-course settings getters/setters
+    public Boolean getSoundsEnabled() { return soundsEnabled; }
+    public void setSoundsEnabled(Boolean soundsEnabled) { this.soundsEnabled = soundsEnabled; }
+    
+    public Boolean getParticlesEnabled() { return particlesEnabled; }
+    public void setParticlesEnabled(Boolean particlesEnabled) { this.particlesEnabled = particlesEnabled; }
+    
+    public Map<String, String> getCustomMessages() { return customMessages; }
+    public void setCustomMessages(Map<String, String> customMessages) { this.customMessages = customMessages; }
+    
+    /**
+     * Check if sounds are enabled for this course (course setting overrides global)
+     */
+    public boolean areSoundsEnabled(BOCRacePlugin plugin) {
+        if (soundsEnabled != null) return soundsEnabled;
+        return plugin.getConfig().getBoolean("sounds.enabled", true);
+    }
+    
+    /**
+     * Check if particles are enabled for this course (course setting overrides global)
+     */
+    public boolean areParticlesEnabled(BOCRacePlugin plugin) {
+        if (particlesEnabled != null) return particlesEnabled;
+        return plugin.getConfig().getBoolean("particles.enabled", true);
+    }
+    
+    /**
+     * Get message for this course (course setting overrides global)
+     */
+    public String getMessage(BOCRacePlugin plugin, String messageKey, String defaultValue) {
+        if (customMessages != null && customMessages.containsKey(messageKey)) {
+            return customMessages.get(messageKey);
+        }
+        return plugin.getConfig().getString("messages." + messageKey, defaultValue);
     }
     
     public String getPrefixDisplay() {

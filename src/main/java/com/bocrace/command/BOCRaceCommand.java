@@ -3,6 +3,8 @@ package com.bocrace.command;
 import com.bocrace.BOCRacePlugin;
 import com.bocrace.model.Course;
 import com.bocrace.model.CourseType;
+import java.util.HashMap;
+import java.util.Map;
 import com.bocrace.model.RaceRecord;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
@@ -42,7 +44,8 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 plugin.getConfigManager().reloadConfigs();
-                sender.sendMessage("§aConfigs reloaded successfully.");
+                plugin.getStorageManager().loadCourses(); // Also reload course settings
+                sender.sendMessage("§aConfigs and courses reloaded successfully.");
                 return true;
             case "debugcourses":
                 if (!sender.hasPermission("bocrace.debug")) {
@@ -300,6 +303,18 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         
         // Create new course
         Course course = new Course(courseName, CourseType.SINGLEPLAYER, sender.getName());
+        
+        // Set default per-course settings (so admins can easily customize)
+        course.setSoundsEnabled(true);      // Default: sounds enabled
+        course.setParticlesEnabled(true);   // Default: particles enabled
+        
+        // Set default custom messages (so admins can see what can be customized)
+        Map<String, String> defaultMessages = new HashMap<>();
+        defaultMessages.put("race-start", "§a§l🏁 RACE STARTED! §a§lGO GO GO!");
+        defaultMessages.put("race-finish", "§6§l🏆 RACE FINISHED! §6§lTime: {time}");
+        defaultMessages.put("personal-best", "§a§l⭐ NEW PERSONAL BEST! §a§l⭐");
+        course.setCustomMessages(defaultMessages);
+        
         plugin.getLogger().info("[DEBUG] Created course object - Name: " + course.getName() + 
             ", Type: " + course.getType() + ", CreatedBy: " + course.getCreatedBy());
         

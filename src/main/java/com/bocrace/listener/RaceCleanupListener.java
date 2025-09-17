@@ -127,10 +127,12 @@ public class RaceCleanupListener implements Listener {
         // Remove the boat
         boatManager.removeRaceBoat(boat, "player_exited");
         
-        // Emergency teleport player back to safety
+        // DQ teleport using lobby priority (same as normal finish)
         Course course = plugin.getStorageManager().getCourse(race.getCourseName());
         if (course != null) {
-            teleportUtil.emergencyTeleport(player, course, race.getPreRaceLocation(), "race_dq");
+            plugin.debugLog("🚫 DQ TELEPORT - Player: " + player.getName() + " exited boat");
+            player.sendMessage("§c§l❌ DISQUALIFIED! §cYou exited your boat. Race ended.");
+            teleportUtil.teleportToLobby(player, course, "dq_silent"); // Silent teleport (no additional message)
         } else {
             // Course not found, use pre-race location or world spawn
             Location safeLocation = race.getPreRaceLocation();
@@ -138,7 +140,7 @@ public class RaceCleanupListener implements Listener {
                 safeLocation = player.getWorld().getSpawnLocation();
             }
             player.teleport(safeLocation);
-            player.sendMessage("§c⚠️ Race ended! Returned to safe location.");
+            player.sendMessage("§c§l❌ DISQUALIFIED! §cRace ended - returned to safe location.");
         }
         
         plugin.debugLog("Race cleanup completed for boat exit: " + player.getName());

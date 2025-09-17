@@ -125,7 +125,7 @@ public class RaceLineListener implements Listener {
             Player player = getPlayerFromBoat(boat);
             if (player != null) {
                 // Play start sound and effects using SoundEffectManager
-                soundEffectManager.playRaceStartEffects(player, player.getLocation());
+                soundEffectManager.playRaceStartEffects(player, player.getLocation(), course);
                 
                 // Send start message
                 player.sendMessage("§a🏁 Timer started!");
@@ -202,7 +202,7 @@ public class RaceLineListener implements Listener {
             
             // Play celebration sound and effects using SoundEffectManager
             plugin.raceDebugLog("🐛 About to play finish effects...");
-            soundEffectManager.playRaceFinishEffects(player, player.getLocation());
+            soundEffectManager.playRaceFinishEffects(player, player.getLocation(), course);
             plugin.raceDebugLog("🎵 Celebration sound played");
             plugin.raceDebugLog("🎆 Firework particles spawned");
             
@@ -236,26 +236,17 @@ public class RaceLineListener implements Listener {
                                ", Course: " + course.getName() + 
                                ", Time: " + finalTimeMs + "ms");
             
-            // Teleport back to lobby after a short delay
-            plugin.raceDebugLog("🐛 Scheduling teleport in 3 seconds...");
+            // Teleport back to lobby after brief delay (let sounds/particles finish)
+            plugin.raceDebugLog("🚀 Scheduling teleport in 1 second (let effects finish)...");
             new BukkitRunnable() {
                 @Override
                 public void run() {
                     if (player.isOnline()) {
-                        // Check if race is still finished (not DQ'd by boat exit)
-                        ActiveRace currentRace = plugin.getRaceManager().getActiveRace(player.getUniqueId());
-                        if (currentRace == null || currentRace.getState() != ActiveRace.State.FINISHED) {
-                            plugin.raceDebugLog("🚫 CANCELLING TELEPORT - Race state changed or player no longer racing");
-                            return;
-                        }
-                        
                         plugin.raceDebugLog("🚀 EXECUTING TELEPORT - Player: " + player.getName() + " to lobby after race completion");
-                        plugin.raceDebugLog("🐛 Player current location before teleport: " + player.getLocation());
                         teleportUtil.teleportToLobby(player, course, "race_complete");
-                        plugin.raceDebugLog("🐛 Player location after teleport: " + player.getLocation());
                     }
                 }
-            }.runTaskLater(plugin, 60L); // 3 second delay
+            }.runTaskLater(plugin, 40L); // 2 second delay
         }
         
         // Remove the boat

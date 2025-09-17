@@ -1,6 +1,7 @@
 package com.bocrace.util;
 
 import com.bocrace.BOCRacePlugin;
+import com.bocrace.model.Course;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -28,8 +29,11 @@ public class SoundEffectManager {
     /**
      * Plays race start effects
      */
-    public void playRaceStartEffects(Player player, Location location) {
-        if (soundsEnabled) {
+    public void playRaceStartEffects(Player player, Location location, Course course) {
+        boolean courseSoundsEnabled = course != null ? course.areSoundsEnabled(plugin) : soundsEnabled;
+        boolean courseParticlesEnabled = course != null ? course.areParticlesEnabled(plugin) : particlesEnabled;
+        
+        if (courseSoundsEnabled) {
             // Bell sound for race start (configurable)
             String soundName = plugin.getConfig().getString("sounds.race-start", "BLOCK_NOTE_BLOCK_BELL");
             Sound sound = parseSound(soundName);
@@ -40,7 +44,7 @@ public class SoundEffectManager {
             player.playSound(location, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 2.0f);
         }
         
-        if (particlesEnabled) {
+        if (courseParticlesEnabled) {
             String particleName = plugin.getConfig().getString("particles.race-start", "FIREWORK");
             Particle particle = parseParticle(particleName);
             if (particle != null) {
@@ -52,9 +56,12 @@ public class SoundEffectManager {
     /**
      * Plays race finish effects
      */
-    public void playRaceFinishEffects(Player player, Location location) {
-        logger.info("🐛 DEBUG: playRaceFinishEffects called - soundsEnabled: " + soundsEnabled);
-        if (soundsEnabled) {
+    public void playRaceFinishEffects(Player player, Location location, Course course) {
+        boolean courseSoundsEnabled = course != null ? course.areSoundsEnabled(plugin) : soundsEnabled;
+        boolean courseParticlesEnabled = course != null ? course.areParticlesEnabled(plugin) : particlesEnabled;
+        
+        logger.info("🐛 DEBUG: playRaceFinishEffects called - courseSoundsEnabled: " + courseSoundsEnabled);
+        if (courseSoundsEnabled) {
             // Primary finish sound
             String soundName = plugin.getConfig().getString("sounds.race-finish", "ENTITY_PLAYER_LEVELUP");
             Sound sound = parseSound(soundName);
@@ -70,10 +77,10 @@ public class SoundEffectManager {
             player.playSound(location, Sound.ENTITY_FIREWORK_ROCKET_TWINKLE, 2.0f, 1.5f);
             logger.info("🐛 DEBUG: Fireworks sounds played!");
         } else {
-            logger.info("🐛 DEBUG: Sounds disabled, skipping finish effects");
+            logger.info("🐛 DEBUG: Sounds disabled for this course, skipping finish effects");
         }
         
-        if (particlesEnabled) {
+        if (courseParticlesEnabled) {
             String particleName = plugin.getConfig().getString("particles.race-finish", "VILLAGER_HAPPY");
             Particle particle = parseParticle(particleName);
             if (particle != null) {

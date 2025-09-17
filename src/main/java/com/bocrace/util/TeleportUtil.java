@@ -94,6 +94,9 @@ public class TeleportUtil {
                 case "race_dq":
                     player.sendMessage("§c⚠️ Race disqualified - exited boat. Returned to " + locationName + ".");
                     break;
+                case "dq_silent":
+                    // No additional message - DQ message already sent
+                    break;
                 default:
                     player.sendMessage("§aTeleported to " + locationName + " for course '" + course.getName() + "'.");
                     break;
