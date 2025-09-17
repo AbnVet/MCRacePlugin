@@ -10,9 +10,11 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.block.Action;
+import org.bukkit.inventory.EquipmentSlot;
 
 /**
  * Handles multiplayer race button interactions
@@ -29,11 +31,15 @@ public class MultiplayerButtonListener implements Listener {
         this.raceManager = plugin.getMultiplayerRaceManager();
     }
     
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerInteract(PlayerInteractEvent event) {
-        if (event.getAction() != Action.RIGHT_CLICK_BLOCK && event.getAction() != Action.LEFT_CLICK_BLOCK) {
-            return;
-        }
+        // DEBUG: Log ALL interactions to see if this listener is even called
+        plugin.multiplayerDebugLog("MultiplayerButtonListener triggered - Action: " + event.getAction() + 
+                                  ", Hand: " + event.getHand());
+        
+        // Only handle right-clicks on blocks with main hand (same as singleplayer)
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        if (event.getHand() != EquipmentSlot.HAND) return;
         
         Block clickedBlock = event.getClickedBlock();
         if (clickedBlock == null) {
@@ -43,11 +49,20 @@ public class MultiplayerButtonListener implements Listener {
         Player player = event.getPlayer();
         Location blockLocation = clickedBlock.getLocation();
         
-        // Find course with matching button location
-        Course course = findCourseByButtonLocation(blockLocation);
-        if (course == null || course.getType() != CourseType.MULTIPLAYER) {
+        // DEBUG: Log all button clicks for troubleshooting
+        plugin.multiplayerDebugLog("Button clicked - Player: " + player.getName() + 
+                                  ", Block: " + clickedBlock.getType().name() + 
+                                  " at " + clickedBlock.getWorld().getName() + " " + 
+                                  clickedBlock.getX() + "," + clickedBlock.getY() + "," + clickedBlock.getZ());
+        
+        // Find multiplayer course by button location (like singleplayer does)
+        Course course = findMultiplayerCourseByButton(clickedBlock);
+        if (course == null) {
+            plugin.multiplayerDebugLog("Button click ignored - not a multiplayer race button");
             return;
         }
+        
+        plugin.multiplayerDebugLog("Multiplayer button found for course: " + course.getName());
         
         // Determine button type and handle accordingly
         ButtonType buttonType = getButtonType(course, blockLocation);
@@ -77,8 +92,8 @@ public class MultiplayerButtonListener implements Listener {
                 break;
         }
         
-        plugin.debugLog("Player " + player.getName() + " pressed " + buttonType + 
-                       " button on course " + course.getName());
+        plugin.multiplayerDebugLog("Player " + player.getName() + " pressed " + buttonType + 
+                                  " button on course " + course.getName());
     }
     
     /**
@@ -309,18 +324,38 @@ public class MultiplayerButtonListener implements Listener {
     }
     
     /**
-     * Find course by button location
+     * Find multiplayer course by button location (like singleplayer does)
      */
-    private Course findCourseByButtonLocation(Location location) {
+    private Course findMultiplayerCourseByButton(Block block) {
+        plugin.multiplayerDebugLog("🔍 Looking for multiplayer course with button at: " + formatLocation(block.getLocation()));
+        
         for (Course course : plugin.getStorageManager().getCoursesByType(CourseType.MULTIPLAYER)) {
-            if (isLocationMatch(course.getMpcreateRaceButton(), location) ||
-                isLocationMatch(course.getMpjoinRaceButton(), location) ||
-                isLocationMatch(course.getMpstartRaceButton(), location) ||
-                isLocationMatch(course.getMpcancelRaceButton(), location) ||
-                isLocationMatch(course.getMpreturnButton(), location)) {
+            plugin.multiplayerDebugLog("🔍 Checking multiplayer course: " + course.getName());
+            
+            // Check each multiplayer button type
+            if (isSameBlock(course.getMpcreateRaceButton(), block.getLocation())) {
+                plugin.multiplayerDebugLog("✅ CREATE RACE BUTTON MATCH - Course: " + course.getName());
+                return course;
+            }
+            if (isSameBlock(course.getMpjoinRaceButton(), block.getLocation())) {
+                plugin.multiplayerDebugLog("✅ JOIN RACE BUTTON MATCH - Course: " + course.getName());
+                return course;
+            }
+            if (isSameBlock(course.getMpstartRaceButton(), block.getLocation())) {
+                plugin.multiplayerDebugLog("✅ START RACE BUTTON MATCH - Course: " + course.getName());
+                return course;
+            }
+            if (isSameBlock(course.getMpcancelRaceButton(), block.getLocation())) {
+                plugin.multiplayerDebugLog("✅ CANCEL RACE BUTTON MATCH - Course: " + course.getName());
+                return course;
+            }
+            if (isSameBlock(course.getMpreturnButton(), block.getLocation())) {
+                plugin.multiplayerDebugLog("✅ RETURN BUTTON MATCH - Course: " + course.getName());
                 return course;
             }
         }
+        
+        plugin.multiplayerDebugLog("❌ NO MULTIPLAYER COURSE FOUND for button");
         return null;
     }
     
@@ -328,36 +363,44 @@ public class MultiplayerButtonListener implements Listener {
      * Get button type for the clicked location
      */
     private ButtonType getButtonType(Course course, Location location) {
-        if (isLocationMatch(course.getMpcreateRaceButton(), location)) {
+        if (isSameBlock(course.getMpcreateRaceButton(), location)) {
             return ButtonType.CREATE_RACE;
         }
-        if (isLocationMatch(course.getMpjoinRaceButton(), location)) {
+        if (isSameBlock(course.getMpjoinRaceButton(), location)) {
             return ButtonType.JOIN_RACE;
         }
-        if (isLocationMatch(course.getMpstartRaceButton(), location)) {
+        if (isSameBlock(course.getMpstartRaceButton(), location)) {
             return ButtonType.START_RACE;
         }
-        if (isLocationMatch(course.getMpcancelRaceButton(), location)) {
+        if (isSameBlock(course.getMpcancelRaceButton(), location)) {
             return ButtonType.CANCEL_RACE;
         }
-        if (isLocationMatch(course.getMpreturnButton(), location)) {
+        if (isSameBlock(course.getMpreturnButton(), location)) {
             return ButtonType.RETURN_LOBBY;
         }
         return null;
     }
     
     /**
-     * Check if two locations match (same world and coordinates)
+     * Check if two locations are the same block (like singleplayer does)
      */
-    private boolean isLocationMatch(Location loc1, Location loc2) {
+    private boolean isSameBlock(Location loc1, Location loc2) {
         if (loc1 == null || loc2 == null) {
             return false;
         }
         
         return loc1.getWorld().equals(loc2.getWorld()) &&
                loc1.getBlockX() == loc2.getBlockX() &&
-               loc1.getBlockY() == loc2.getBlockY() &&
+               Math.abs(loc1.getBlockY() - loc2.getBlockY()) <= 1 && // Button face tolerance (COPIED FROM SINGLEPLAYER)
                loc1.getBlockZ() == loc2.getBlockZ();
+    }
+    
+    /**
+     * Format location for debug (like singleplayer does)
+     */
+    private String formatLocation(Location loc) {
+        if (loc == null) return "null";
+        return loc.getWorld().getName() + " " + loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ();
     }
     
     /**

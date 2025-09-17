@@ -341,6 +341,51 @@ public class SetupListener implements Listener {
                 plugin.getLogger().info("[DEBUG] Return main button location set: " + location.toString());
                 break;
                 
+            // MULTIPLAYER SETUP ACTIONS
+            case "setmpracelobbyspawn":
+                course.setMpraceLobbySpawn(location);
+                success = true;
+                player.sendMessage("§aMultiplayer race lobby spawn set for course '" + courseName + "'!");
+                plugin.getLogger().info("[DEBUG] MP race lobby spawn set: " + location.toString());
+                break;
+                
+            case "setmpcreateracebutton":
+                course.setMpcreateRaceButton(location);
+                success = true;
+                player.sendMessage("§aCreate race button location set for course '" + courseName + "'!");
+                player.sendMessage("§7This button creates multiplayer race sessions (OP only)");
+                plugin.getLogger().info("[DEBUG] MP create race button set: " + location.toString());
+                break;
+                
+            case "setmpstartracebutton":
+                course.setMpstartRaceButton(location);
+                success = true;
+                player.sendMessage("§aStart race button location set for course '" + courseName + "'!");
+                player.sendMessage("§7This button starts races AND triggers redstone!");
+                plugin.getLogger().info("[DEBUG] MP start race button set: " + location.toString());
+                break;
+                
+            case "setmpjoinracebutton":
+                course.setMpjoinRaceButton(location);
+                success = true;
+                player.sendMessage("§aJoin race button location set for course '" + courseName + "'!");
+                plugin.getLogger().info("[DEBUG] MP join race button set: " + location.toString());
+                break;
+                
+            case "setmpcancelracebutton":
+                course.setMpcancelRaceButton(location);
+                success = true;
+                player.sendMessage("§aCancel race button location set for course '" + courseName + "'!");
+                plugin.getLogger().info("[DEBUG] MP cancel race button set: " + location.toString());
+                break;
+                
+            case "setmpreturnbutton":
+                course.setMpreturnButton(location);
+                success = true;
+                player.sendMessage("§aReturn to lobby button location set for course '" + courseName + "'!");
+                plugin.getLogger().info("[DEBUG] MP return button set: " + location.toString());
+                break;
+                
             case "setcourselobbyspawn":
                 course.setSpcourselobby(location);
                 success = true;
@@ -355,8 +400,30 @@ public class SetupListener implements Listener {
                 plugin.getLogger().info("[DEBUG] Main lobby spawn location set: " + location.toString());
                 break;
                 
-                
             default:
+                // Check if it's a multiplayer boat spawn (setmpboatspawn1, setmpboatspawn2, etc.)
+                if (action.startsWith("setmpboatspawn")) {
+                    try {
+                        String indexStr = action.substring("setmpboatspawn".length());
+                        int spawnIndex = Integer.parseInt(indexStr);
+                        
+                        if (spawnIndex >= 1 && spawnIndex <= 10) {
+                            // Ensure list has enough capacity
+                            while (course.getMpboatSpawns().size() < spawnIndex) {
+                                course.getMpboatSpawns().add(null);
+                            }
+                            
+                            // Set the spawn at the correct index (0-based)
+                            course.getMpboatSpawns().set(spawnIndex - 1, location);
+                            success = true;
+                            player.sendMessage("§aMultiplayer boat spawn #" + spawnIndex + " set for course '" + courseName + "'!");
+                            plugin.getLogger().info("[DEBUG] MP boat spawn " + spawnIndex + " set: " + location.toString());
+                            break;
+                        }
+                    } catch (NumberFormatException e) {
+                        // Fall through to default error
+                    }
+                }
                 player.sendMessage("§cUnknown setup action: " + action);
                 plugin.getLogger().info("[DEBUG] Unknown setup action: " + action);
                 return;

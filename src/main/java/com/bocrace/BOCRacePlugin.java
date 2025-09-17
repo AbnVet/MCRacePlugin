@@ -85,6 +85,7 @@ public class BOCRacePlugin extends JavaPlugin {
         
         // Register event listeners
         getServer().getPluginManager().registerEvents(new SetupListener(this), this);
+        getServer().getPluginManager().registerEvents(new StartButtonListener(this, boatManager, teleportUtil), this);
         getServer().getPluginManager().registerEvents(new RaceLineListener(this, boatManager, teleportUtil), this);
         getServer().getPluginManager().registerEvents(new RaceCleanupListener(this, boatManager, teleportUtil), this);
         getServer().getPluginManager().registerEvents(new MultiplayerButtonListener(this), this);
@@ -237,6 +238,12 @@ public class BOCRacePlugin extends JavaPlugin {
     public void setupDebugLog(String message) {
         if (configManager.isSetupDebugEnabled()) {
             getLogger().info("[SETUP-DEBUG] " + message);
+        }
+    }
+    
+    public void multiplayerDebugLog(String message) {
+        if (getConfig().getBoolean("debug-multiplayer", false)) {
+            getLogger().info("[MP-DEBUG] " + message);
         }
     }
     

@@ -41,8 +41,9 @@ colors:
 
 # Debug modes
 debug: false
-debug-race: false    # Specific debug for race mechanics (button clicks, line detection, etc.)
-debug-setup: false  # Specific debug for course setup commands
+debug-race: false         # Specific debug for race mechanics (button clicks, line detection, etc.)
+debug-setup: false        # Specific debug for course setup commands
+debug-multiplayer: false  # Specific debug for multiplayer race system (buttons, sessions, etc.)
 
 # Message customization
 messages:

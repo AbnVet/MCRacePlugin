@@ -986,38 +986,47 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
     }
     
     private boolean handleMultiplayerSetupAction(Player player, Course course, String action, String[] args) {
-        Location playerLoc = player.getLocation();
         
         switch (action) {
             case "setmpracelobbyspawn":
-                course.setMpraceLobbySpawn(playerLoc);
-                player.sendMessage("§aRace lobby spawn set for course '" + course.getName() + "'!");
+                plugin.setPlayerSetupMode(player, course.getName(), "setmpracelobbyspawn");
+                player.sendMessage("§eRight-click where players should spawn in the race lobby for course '" + course.getName() + "'");
+                player.sendMessage("§7You have 30 seconds to right-click a block!");
                 break;
                 
             case "setmpcreateracebutton":
-                course.setMpcreateRaceButton(playerLoc);
-                player.sendMessage("§aCreate race button location set for course '" + course.getName() + "'!");
+                plugin.setPlayerSetupMode(player, course.getName(), "setmpcreateracebutton");
+                player.sendMessage("§eRight-click the CREATE RACE button for course '" + course.getName() + "'");
+                player.sendMessage("§7This button creates multiplayer race sessions (OP only)");
+                player.sendMessage("§7You have 30 seconds to right-click a button!");
                 break;
                 
             case "setmpstartracebutton":
-                course.setMpstartRaceButton(playerLoc);
-                player.sendMessage("§aStart race button location set for course '" + course.getName() + "'!");
-                player.sendMessage("§7This button will trigger redstone AND start the race.");
+                plugin.setPlayerSetupMode(player, course.getName(), "setmpstartracebutton");
+                player.sendMessage("§eRight-click the START RACE button for course '" + course.getName() + "'");
+                player.sendMessage("§7This button starts the race AND triggers redstone!");
+                player.sendMessage("§7You have 30 seconds to right-click a button!");
                 break;
                 
             case "setmpjoinracebutton":
-                course.setMpjoinRaceButton(playerLoc);
-                player.sendMessage("§aJoin race button location set for course '" + course.getName() + "'!");
+                plugin.setPlayerSetupMode(player, course.getName(), "setmpjoinracebutton");
+                player.sendMessage("§eRight-click the JOIN RACE button for course '" + course.getName() + "'");
+                player.sendMessage("§7This button lets players join active races");
+                player.sendMessage("§7You have 30 seconds to right-click a button!");
                 break;
                 
             case "setmpcancelracebutton":
-                course.setMpcancelRaceButton(playerLoc);
-                player.sendMessage("§aCancel race button location set for course '" + course.getName() + "'!");
+                plugin.setPlayerSetupMode(player, course.getName(), "setmpcancelracebutton");
+                player.sendMessage("§eRight-click the CANCEL RACE button for course '" + course.getName() + "'");
+                player.sendMessage("§7This button cancels races (leader only, optional)");
+                player.sendMessage("§7You have 30 seconds to right-click a button!");
                 break;
                 
             case "setmpreturnbutton":
-                course.setMpreturnButton(playerLoc);
-                player.sendMessage("§aReturn button location set for course '" + course.getName() + "'!");
+                plugin.setPlayerSetupMode(player, course.getName(), "setmpreturnbutton");
+                player.sendMessage("§eRight-click the RETURN TO LOBBY button for course '" + course.getName() + "'");
+                player.sendMessage("§7This button teleports players back to race lobby");
+                player.sendMessage("§7You have 30 seconds to right-click a button!");
                 break;
                 
             case "setmpboatspawn":
@@ -1026,21 +1035,18 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 
+                String spawnIndexStr = args[4];
                 try {
-                    int spawnIndex = Integer.parseInt(args[4]);
+                    int spawnIndex = Integer.parseInt(spawnIndexStr);
                     if (spawnIndex < 1 || spawnIndex > 10) {
                         player.sendMessage("§cBoat spawn index must be between 1 and 10!");
                         return true;
                     }
                     
-                    // Ensure list has enough capacity
-                    while (course.getMpboatSpawns().size() < spawnIndex) {
-                        course.getMpboatSpawns().add(null);
-                    }
-                    
-                    // Set the spawn at the correct index (0-based)
-                    course.getMpboatSpawns().set(spawnIndex - 1, playerLoc);
-                    player.sendMessage("§aBoat spawn " + spawnIndex + " set for course '" + course.getName() + "'!");
+                    plugin.setPlayerSetupMode(player, course.getName(), "setmpboatspawn" + spawnIndex);
+                    player.sendMessage("§eRight-click where boat #" + spawnIndex + " should spawn for course '" + course.getName() + "'");
+                    player.sendMessage("§7Boat will face the direction you're looking when you click");
+                    player.sendMessage("§7You have 30 seconds to right-click a block!");
                     
                 } catch (NumberFormatException e) {
                     player.sendMessage("§cInvalid spawn index. Use a number between 1 and 10.");
@@ -1061,9 +1067,7 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
                 return true;
         }
         
-        // Save the course after any changes
-        course.updateLastEdited();
-        plugin.getStorageManager().saveCourse(course);
+        // Setup mode initiated - no immediate saving (SetupListener handles the actual setting)
         return true;
     }
     
@@ -1114,13 +1118,48 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         
-        sender.sendMessage("§6=== Course Information ===");
+        sender.sendMessage("§6=== Multiplayer Course Information ===");
         sender.sendMessage("§7Name: §f" + course.getName());
         sender.sendMessage("§7Type: §f" + course.getType());
         sender.sendMessage("§7Prefix: §f" + course.getPrefixDisplay());
         sender.sendMessage("§7Created by: §f" + course.getCreatedBy());
         sender.sendMessage("§7Created on: §f" + course.getCreatedOn());
         sender.sendMessage("§7Last edited: §f" + course.getLastEdited());
+        
+        // Show multiplayer setup status (like singleplayer does)
+        sender.sendMessage("§6Multiplayer Setup Status:");
+        sender.sendMessage("§7- Race Lobby Spawn: " + (course.getMpraceLobbySpawn() != null ? "§aSET" : "§cNOT SET"));
+        sender.sendMessage("§7- Create Race Button: " + (course.getMpcreateRaceButton() != null ? "§aSET" : "§cNOT SET"));
+        sender.sendMessage("§7- Start Race Button: " + (course.getMpstartRaceButton() != null ? "§aSET" : "§cNOT SET"));
+        sender.sendMessage("§7- Join Race Button: " + (course.getMpjoinRaceButton() != null ? "§aSET" : "§cNOT SET"));
+        sender.sendMessage("§7- Cancel Race Button: " + (course.getMpcancelRaceButton() != null ? "§aSET" : "§7OPTIONAL"));
+        sender.sendMessage("§7- Return Button: " + (course.getMpreturnButton() != null ? "§aSET" : "§cNOT SET"));
+        
+        // Show boat spawns status
+        int boatSpawns = course.getMpboatSpawns() != null ? course.getMpboatSpawns().size() : 0;
+        sender.sendMessage("§7- Boat Spawns: §e" + boatSpawns + "/10 " + (boatSpawns >= 2 ? "§a✓" : "§c(Need at least 2)"));
+        
+        // Show race lines status (shared with singleplayer)
+        sender.sendMessage("§7- Start Line Point 1: " + (course.getSpstart1() != null ? "§aSET" : "§cNOT SET"));
+        sender.sendMessage("§7- Start Line Point 2: " + (course.getSpstart2() != null ? "§aSET" : "§cNOT SET"));
+        sender.sendMessage("§7- Finish Line Point 1: " + (course.getSpfinish1() != null ? "§aSET" : "§cNOT SET"));
+        sender.sendMessage("§7- Finish Line Point 2: " + (course.getSpfinish2() != null ? "§aSET" : "§cNOT SET"));
+        
+        // Show completion status
+        int setCount = 0;
+        int totalRequired = 8; // 6 required components + 2 race lines
+        if (course.getMpraceLobbySpawn() != null) setCount++;
+        if (course.getMpcreateRaceButton() != null) setCount++;
+        if (course.getMpstartRaceButton() != null) setCount++;
+        if (course.getMpjoinRaceButton() != null) setCount++;
+        if (course.getMpreturnButton() != null) setCount++;
+        if (boatSpawns >= 2) setCount++; // Count as 1 if at least 2 boat spawns
+        if (course.getSpstart1() != null && course.getSpstart2() != null) setCount++; // Both start points
+        if (course.getSpfinish1() != null && course.getSpfinish2() != null) setCount++; // Both finish points
+        
+        sender.sendMessage("§6Completion: §e" + setCount + "/" + totalRequired + " " + 
+                          (setCount >= totalRequired ? "§a✅ READY FOR RACING" : "§c❌ INCOMPLETE"));
+        
         return true;
     }
 }

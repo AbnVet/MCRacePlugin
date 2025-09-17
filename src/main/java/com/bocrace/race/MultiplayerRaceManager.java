@@ -74,8 +74,8 @@ public class MultiplayerRaceManager {
         // Send server announcement
         sendRaceCreatedAnnouncement(race);
         
-        plugin.debugLog("Created multiplayer race: " + raceId + " on course " + course.getName() + 
-                       " by " + leader.getName());
+        plugin.multiplayerDebugLog("Created race: " + raceId + " on course " + course.getName() + 
+                                  " by " + leader.getName());
         
         return race;
     }
@@ -118,7 +118,7 @@ public class MultiplayerRaceManager {
         plugin.getSoundEffectManager().playRaceStartEffects(player, boatSpawn, course);
         
         player.sendMessage("§a§l🏁 Joined multiplayer race! §aWaiting for race leader to start...");
-        plugin.debugLog("Player " + player.getName() + " joined race " + race.getRaceId());
+        plugin.multiplayerDebugLog("Player " + player.getName() + " joined race " + race.getRaceId());
         
         return true;
     }
@@ -167,8 +167,8 @@ public class MultiplayerRaceManager {
             }
         }
         
-        plugin.debugLog("Started multiplayer race: " + race.getRaceId() + " with " + 
-                       race.getPlayerCount() + " players");
+        plugin.multiplayerDebugLog("Started race: " + race.getRaceId() + " with " + 
+                                  race.getPlayerCount() + " players");
         
         return true;
     }

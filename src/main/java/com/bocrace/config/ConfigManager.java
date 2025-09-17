@@ -76,6 +76,45 @@ public class ConfigManager {
         }
         plugin.reloadConfig();
         config = plugin.getConfig();
+        
+        // Auto-migrate config for updates (add missing sections)
+        migrateConfig();
+    }
+    
+    /**
+     * Add missing config sections for plugin updates
+     */
+    private void migrateConfig() {
+        boolean configUpdated = false;
+        
+        // Add multiplayer section if missing
+        if (!config.contains("multiplayer")) {
+            plugin.getLogger().info("Adding missing multiplayer configuration section...");
+            config.set("multiplayer.race-timeout", 300);
+            config.set("multiplayer.max-join-players", 9);
+            config.set("multiplayer.announcements.race-created", "&6{player} &eis starting a multiplayer race on &a{course}&e! Join at the race lobby for prizes!");
+            config.set("multiplayer.announcements.race-started", "&aRace started on &6{course}&a! &7({players} racers)");
+            config.set("multiplayer.announcements.race-finished", "&6Race completed on &a{course}&6! Results posted.");
+            config.set("multiplayer.announcements.race-timeout", "&cRace on &6{course} &chas timed out! Unfinished players disqualified.");
+            configUpdated = true;
+        }
+        
+        // Add debug-multiplayer if missing
+        if (!config.contains("debug-multiplayer")) {
+            plugin.getLogger().info("Adding missing debug-multiplayer option...");
+            config.set("debug-multiplayer", false);
+            configUpdated = true;
+        }
+        
+        // Save updated config
+        if (configUpdated) {
+            try {
+                config.save(new File(plugin.getDataFolder(), "config.yml"));
+                plugin.getLogger().info("✅ Config updated with new features!");
+            } catch (Exception e) {
+                plugin.getLogger().warning("Failed to save updated config: " + e.getMessage());
+            }
+        }
     }
     
     private void loadMessages() {
