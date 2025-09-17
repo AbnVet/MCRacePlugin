@@ -63,7 +63,7 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
     
     private boolean handleSingleplayerCommand(CommandSender sender, String[] args) {
         if (args.length < 2) {
-            sender.sendMessage("§cUsage: /bocrace singleplayer <create|setup|delete|list|tp|info|reload|stats|recent>");
+            sender.sendMessage("§cUsage: /bocrace singleplayer <create|setup|delete|list|tp|info|reload|testdata>");
             return true;
         }
         
@@ -84,10 +84,6 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
                 return handleSingleplayerInfo(sender, args);
             case "reload":
                 return handleSingleplayerReload(sender);
-            case "stats":
-                return handleSingleplayerStats(sender);
-            case "recent":
-                return handleSingleplayerRecent(sender);
             case "testdata":
                 return handleTestData(sender);
             default:
@@ -144,10 +140,8 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("§a/bocrace singleplayer delete <name> §7- Delete a singleplayer course");
         sender.sendMessage("§a/bocrace singleplayer list §7- List all singleplayer courses");
         sender.sendMessage("§a/bocrace singleplayer tp <name> §7- Teleport to a singleplayer course");
-        sender.sendMessage("§a/bocrace singleplayer info <name> §7- Show course information");
+        sender.sendMessage("§a/bocrace singleplayer info <name> §7- Show course information and usage statistics");
         sender.sendMessage("§a/bocrace singleplayer reload §7- Reload singleplayer courses");
-        sender.sendMessage("§a/bocrace singleplayer stats <name> §7- Show course statistics");
-        sender.sendMessage("§a/bocrace singleplayer recent <name> §7- Show recent race results");
         
         // Multiplayer Commands (Aqua)
         sender.sendMessage("§6Multiplayer Commands:");
@@ -160,6 +154,13 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("§b/bocrace multiplayer reload §7- Reload multiplayer courses");
         sender.sendMessage("§b/bocrace multiplayer stats <name> §7- Show course statistics");
         sender.sendMessage("§b/bocrace multiplayer recent <name> §7- Show recent race results");
+        
+        // Player Statistics Commands (Light Purple)
+        sender.sendMessage("§6Player Statistics Commands:");
+        sender.sendMessage("§d/racestats recent §7- Show your 5 most recent races");
+        sender.sendMessage("§d/racestats top <course> §7- Show top 5 times for a specific course");
+        sender.sendMessage("§d/racestats mytimes <course> §7- Show your times for a specific course");
+        sender.sendMessage("§d/racestats stats §7- Show your overall race statistics");
         
         // Global Commands (Yellow)
         sender.sendMessage("§6Global Commands:");
@@ -198,7 +199,7 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
             String firstArg = args[0].toLowerCase();
             if (firstArg.equals("singleplayer")) {
                 // Singleplayer subcommands
-                List<String> spCommands = Arrays.asList("create", "setup", "delete", "list", "tp", "info", "reload", "stats", "recent");
+                List<String> spCommands = Arrays.asList("create", "setup", "delete", "list", "tp", "info", "reload", "testdata");
                 for (String spCommand : spCommands) {
                     if (spCommand.toLowerCase().startsWith(args[1].toLowerCase())) {
                         completions.add(spCommand);
@@ -219,8 +220,7 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
             String secondArg = args[1].toLowerCase();
             
             if (firstArg.equals("singleplayer")) {
-                if (secondArg.equals("delete") || secondArg.equals("info") || secondArg.equals("tp") || 
-                    secondArg.equals("stats") || secondArg.equals("recent") || secondArg.equals("setup")) {
+                if (secondArg.equals("delete") || secondArg.equals("info") || secondArg.equals("tp") || secondArg.equals("setup")) {
                     // Add singleplayer course names
                     var courses = plugin.getStorageManager().getCoursesByType(CourseType.SINGLEPLAYER);
                     for (Course course : courses) {
@@ -387,13 +387,44 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("§7Last edited: §f" + course.getLastEdited());
         
         // Show setup status
-        sender.sendMessage("§7Setup Status:");
+        sender.sendMessage("§6Setup Status:");
         sender.sendMessage("§7- Start Button: " + (course.getSpstartbutton() != null ? "§aSET" : "§cNOT SET"));
         sender.sendMessage("§7- Boat Spawn: " + (course.getSpboatspawn() != null ? "§aSET" : "§cNOT SET"));
+        sender.sendMessage("§7- Start Line Point 1: " + (course.getSpstart1() != null ? "§aSET" : "§cNOT SET"));
+        sender.sendMessage("§7- Start Line Point 2: " + (course.getSpstart2() != null ? "§aSET" : "§cNOT SET"));
+        sender.sendMessage("§7- Finish Line Point 1: " + (course.getSpfinish1() != null ? "§aSET" : "§cNOT SET"));
+        sender.sendMessage("§7- Finish Line Point 2: " + (course.getSpfinish2() != null ? "§aSET" : "§cNOT SET"));
+        sender.sendMessage("§7- Return Point: " + (course.getSpreturn() != null ? "§aSET" : "§cNOT SET"));
+        sender.sendMessage("§7- Course Lobby: " + (course.getSpcourselobby() != null ? "§aSET" : "§cNOT SET"));
+        sender.sendMessage("§7- Main Lobby: " + (course.getSpmainlobby() != null ? "§aSET" : "§cNOT SET"));
         
-        plugin.getLogger().info("[DEBUG] Course info displayed - Start Button: " + 
-            (course.getSpstartbutton() != null ? "SET" : "NOT SET") + 
-            ", Boat Spawn: " + (course.getSpboatspawn() != null ? "SET" : "NOT SET"));
+        // Show completion status
+        int setCount = 0;
+        int totalCount = 9;
+        if (course.getSpstartbutton() != null) setCount++;
+        if (course.getSpboatspawn() != null) setCount++;
+        if (course.getSpstart1() != null) setCount++;
+        if (course.getSpstart2() != null) setCount++;
+        if (course.getSpfinish1() != null) setCount++;
+        if (course.getSpfinish2() != null) setCount++;
+        if (course.getSpreturn() != null) setCount++;
+        if (course.getSpcourselobby() != null) setCount++;
+        if (course.getSpmainlobby() != null) setCount++;
+        
+        String completionColor = setCount == totalCount ? "§a" : (setCount > 0 ? "§e" : "§c");
+        sender.sendMessage("§7Setup Progress: " + completionColor + setCount + "/" + totalCount + " complete");
+        
+        // Show usage statistics
+        sender.sendMessage("§6Usage Statistics:");
+        sender.sendMessage("§7Times Used: §f" + course.getUsageCount());
+        if (course.getLastUsed() != null) {
+            sender.sendMessage("§7Last Used: §f" + course.getLastUsed().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            sender.sendMessage("§7Last Used By: §f" + (course.getLastUsedBy() != null ? course.getLastUsedBy() : "Unknown"));
+        } else {
+            sender.sendMessage("§7Last Used: §cNever");
+        }
+        
+        plugin.getLogger().info("[DEBUG] Course info displayed - Setup progress: " + setCount + "/" + totalCount + " locations set, Usage: " + course.getUsageCount() + " times");
         return true;
     }
     
@@ -401,8 +432,18 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         plugin.getLogger().info("[DEBUG] Setup command called - Player: " + sender.getName() + ", Args: " + java.util.Arrays.toString(args));
         
         if (args.length < 3) {
-            sender.sendMessage("§cUsage: /bocrace singleplayer setup <coursename>");
+            sender.sendMessage("§cUsage: /bocrace singleplayer setup <coursename> [action]");
             plugin.getLogger().info("[DEBUG] Setup command failed - insufficient arguments");
+            return true;
+        }
+        
+        // Check if the third argument is a setup action (not a course name)
+        String thirdArg = args[2].toLowerCase();
+        if (thirdArg.startsWith("set")) {
+            // This is a setup action, not a course name
+            sender.sendMessage("§cUsage: /bocrace singleplayer setup <coursename> " + thirdArg);
+            sender.sendMessage("§7You need to specify a course name first!");
+            plugin.getLogger().info("[DEBUG] Setup command failed - setup action provided without course name: " + thirdArg);
             return true;
         }
         
@@ -565,41 +606,6 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         return true;
     }
     
-    private boolean handleSingleplayerStats(CommandSender sender) {
-        plugin.getLogger().info("[DEBUG] Singleplayer stats command called - Player: " + sender.getName());
-        
-        var courses = plugin.getStorageManager().getCoursesByType(CourseType.SINGLEPLAYER);
-        
-        sender.sendMessage("§6=== Singleplayer Race Statistics ===");
-        sender.sendMessage("§7Total Courses: §f" + courses.size());
-        
-        int setupComplete = 0;
-        for (Course course : courses) {
-            if (course.getSpstartbutton() != null && course.getSpboatspawn() != null) {
-                setupComplete++;
-            }
-        }
-        
-        sender.sendMessage("§7Fully Setup Courses: §f" + setupComplete);
-        sender.sendMessage("§7Incomplete Setup: §f" + (courses.size() - setupComplete));
-        sender.sendMessage("§7");
-        sender.sendMessage("§7Note: Race statistics will be available once races are implemented.");
-        
-        plugin.getLogger().info("[DEBUG] Stats displayed - Total: " + courses.size() + ", Complete: " + setupComplete);
-        return true;
-    }
-    
-    private boolean handleSingleplayerRecent(CommandSender sender) {
-        plugin.getLogger().info("[DEBUG] Singleplayer recent command called - Player: " + sender.getName());
-        
-        sender.sendMessage("§6=== Recent Singleplayer Races ===");
-        sender.sendMessage("§7No recent races found.");
-        sender.sendMessage("§7");
-        sender.sendMessage("§7Note: Recent race history will be available once races are implemented.");
-        
-        plugin.getLogger().info("[DEBUG] Recent races displayed (placeholder)");
-        return true;
-    }
     
     private boolean handleTestData(CommandSender sender) {
         plugin.debugLog("Test data command called - Player: " + sender.getName());
@@ -613,7 +619,7 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         String playerName = player.getName();
         
         // Test saving race records
-        sender.sendMessage("§6=== Testing Data Structure ===");
+        sender.sendMessage("§6=== Testing New Data Structure ===");
         
         // Test 1: Save some mock race records
         plugin.getRecordManager().saveRaceRecord(playerName, "TestCourse1", 45.2, CourseType.SINGLEPLAYER);
@@ -648,11 +654,15 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         }
         
         sender.sendMessage("§6=== Test Complete ===");
-        sender.sendMessage("§7Check the plugin data folder for generated YAML files");
-        plugin.debugLog("Data structure test completed successfully");
+        sender.sendMessage("§7Check the plugin data folder for the new organized structure:");
+        sender.sendMessage("§7  data/singleplayer/courses/");
+        sender.sendMessage("§7  data/singleplayer/players/");
+        sender.sendMessage("§7  data/multiplayer/ (ready for future)");
+        plugin.debugLog("New data structure test completed successfully");
         
         return true;
     }
+    
     
     // Additional setup command handlers
     private boolean handleSetStart(CommandSender sender, String[] args, Course course) {

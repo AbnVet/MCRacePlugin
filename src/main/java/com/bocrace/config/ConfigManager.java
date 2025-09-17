@@ -38,17 +38,34 @@ public class ConfigManager {
     }
     
     private void createCourseFolders() {
-        File singleplayerFolder = new File(plugin.getDataFolder(), "singleplayer");
-        File multiplayerFolder = new File(plugin.getDataFolder(), "multiplayer");
+        // Create courses directory structure
+        File coursesDir = new File(plugin.getDataFolder(), "courses");
+        File singleplayerCoursesDir = new File(coursesDir, "singleplayer");
+        File multiplayerCoursesDir = new File(coursesDir, "multiplayer");
         
-        if (!singleplayerFolder.exists()) {
-            singleplayerFolder.mkdirs();
-            plugin.getLogger().info("Created singleplayer course folder");
+        if (!singleplayerCoursesDir.exists()) {
+            singleplayerCoursesDir.mkdirs();
+            plugin.getLogger().info("Created singleplayer courses folder");
         }
         
-        if (!multiplayerFolder.exists()) {
-            multiplayerFolder.mkdirs();
-            plugin.getLogger().info("Created multiplayer course folder");
+        if (!multiplayerCoursesDir.exists()) {
+            multiplayerCoursesDir.mkdirs();
+            plugin.getLogger().info("Created multiplayer courses folder");
+        }
+        
+        // Create data directory structure
+        File dataDir = new File(plugin.getDataFolder(), "data");
+        File singleplayerDataDir = new File(dataDir, "singleplayer");
+        File multiplayerDataDir = new File(dataDir, "multiplayer");
+        
+        if (!singleplayerDataDir.exists()) {
+            singleplayerDataDir.mkdirs();
+            plugin.getLogger().info("Created singleplayer data folder");
+        }
+        
+        if (!multiplayerDataDir.exists()) {
+            multiplayerDataDir.mkdirs();
+            plugin.getLogger().info("Created multiplayer data folder");
         }
     }
     

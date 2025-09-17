@@ -9,3 +9,4 @@ com\bocrace\model\Course.class
 com\bocrace\model\RaceRecord.class
 com\bocrace\storage\YAMLRecordManager.class
 com\bocrace\storage\RecordManager.class
+com\bocrace\command\RaceStatsCommand.class

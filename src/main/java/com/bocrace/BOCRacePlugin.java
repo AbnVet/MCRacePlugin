@@ -1,6 +1,7 @@
 package com.bocrace;
 
 import com.bocrace.command.BOCRaceCommand;
+import com.bocrace.command.RaceStatsCommand;
 import com.bocrace.config.ConfigManager;
 import com.bocrace.listener.SetupListener;
 import com.bocrace.storage.StorageManager;
@@ -44,6 +45,10 @@ public class BOCRacePlugin extends JavaPlugin {
         // Register the main command
         getCommand("bocrace").setExecutor(new BOCRaceCommand(this));
         getCommand("bocrace").setTabCompleter(new BOCRaceCommand(this));
+        
+        // Register the race stats command
+        getCommand("racestats").setExecutor(new RaceStatsCommand(this));
+        getCommand("racestats").setTabCompleter(new RaceStatsCommand(this));
         
         // Register event listeners
         getServer().getPluginManager().registerEvents(new SetupListener(this), this);

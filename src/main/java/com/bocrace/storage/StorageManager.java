@@ -34,17 +34,47 @@ public class StorageManager {
     public void loadCourses() {
         courses.clear();
         
+        // Create courses directory structure
+        createCoursesDirectoryStructure();
+        
         // Load singleplayer courses
-        loadCoursesFromFolder("singleplayer", CourseType.SINGLEPLAYER);
+        loadCoursesFromFolder("courses/singleplayer", CourseType.SINGLEPLAYER);
         
         // Load multiplayer courses
-        loadCoursesFromFolder("multiplayer", CourseType.MULTIPLAYER);
+        loadCoursesFromFolder("courses/multiplayer", CourseType.MULTIPLAYER);
         
         if (courses.isEmpty()) {
-            plugin.getLogger().info("No courses found in singleplayer/ or multiplayer/");
+            plugin.getLogger().info("No courses found in courses/singleplayer/ or courses/multiplayer/");
         } else {
             plugin.getLogger().info("Loaded " + courses.size() + " courses");
         }
+    }
+    
+    private void createCoursesDirectoryStructure() {
+        plugin.debugLog("Creating courses directory structure...");
+        
+        // Create main courses directory
+        File coursesDir = new File(plugin.getDataFolder(), "courses");
+        if (!coursesDir.exists()) {
+            coursesDir.mkdirs();
+            plugin.debugLog("Created courses directory: " + coursesDir.getAbsolutePath());
+        }
+        
+        // Create singleplayer courses directory
+        File singleplayerCoursesDir = new File(coursesDir, "singleplayer");
+        if (!singleplayerCoursesDir.exists()) {
+            singleplayerCoursesDir.mkdirs();
+            plugin.debugLog("Created singleplayer courses directory: " + singleplayerCoursesDir.getAbsolutePath());
+        }
+        
+        // Create multiplayer courses directory
+        File multiplayerCoursesDir = new File(coursesDir, "multiplayer");
+        if (!multiplayerCoursesDir.exists()) {
+            multiplayerCoursesDir.mkdirs();
+            plugin.debugLog("Created multiplayer courses directory: " + multiplayerCoursesDir.getAbsolutePath());
+        }
+        
+        plugin.debugLog("Courses directory structure created successfully");
     }
     
     private void loadCoursesFromFolder(String folderName, CourseType type) {
@@ -172,7 +202,7 @@ public class StorageManager {
     
     public void saveCourse(Course course) {
         try {
-            String folderName = course.getType() == CourseType.SINGLEPLAYER ? "singleplayer" : "multiplayer";
+            String folderName = course.getType() == CourseType.SINGLEPLAYER ? "courses/singleplayer" : "courses/multiplayer";
             File folder = new File(plugin.getDataFolder(), folderName);
             if (!folder.exists()) {
                 folder.mkdirs();
@@ -257,6 +287,10 @@ public class StorageManager {
         return courses.containsKey(name);
     }
     
+    public List<String> getCourseNames() {
+        return new ArrayList<>(courses.keySet());
+    }
+    
     public void addCourse(Course course) {
         courses.put(course.getName(), course);
     }
@@ -265,7 +299,7 @@ public class StorageManager {
         Course course = courses.get(name);
         if (course != null) {
             // Delete the YAML file from disk
-            String folderName = course.getType() == CourseType.SINGLEPLAYER ? "singleplayer" : "multiplayer";
+            String folderName = course.getType() == CourseType.SINGLEPLAYER ? "courses/singleplayer" : "courses/multiplayer";
             File folder = new File(plugin.getDataFolder(), folderName);
             File file = new File(folder, course.getName() + ".yml");
             

@@ -20,21 +20,71 @@ import java.util.stream.Collectors;
 public class YAMLRecordManager implements RecordManager {
     
     private final BOCRacePlugin plugin;
-    private final File recordsDir;
+    private final File dataDir;
+    private final File singleplayerDir;
+    private final File singleplayerCoursesDir;
+    private final File singleplayerPlayersDir;
+    private final File multiplayerDir;
+    private final File multiplayerCoursesDir;
+    private final File multiplayerPlayersDir;
     private final File playerStatsFile;
     private final File playerRecentFile;
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     
     public YAMLRecordManager(BOCRacePlugin plugin) {
         this.plugin = plugin;
-        this.recordsDir = new File(plugin.getDataFolder(), "records");
-        this.playerStatsFile = new File(plugin.getDataFolder(), "player_stats.yml");
-        this.playerRecentFile = new File(plugin.getDataFolder(), "player_recent.yml");
+        this.dataDir = new File(plugin.getDataFolder(), "data");
+        this.singleplayerDir = new File(dataDir, "singleplayer");
+        this.singleplayerCoursesDir = new File(singleplayerDir, "courses");
+        this.singleplayerPlayersDir = new File(singleplayerDir, "players");
+        this.multiplayerDir = new File(dataDir, "multiplayer");
+        this.multiplayerCoursesDir = new File(multiplayerDir, "courses");
+        this.multiplayerPlayersDir = new File(multiplayerDir, "players");
+        this.playerStatsFile = new File(singleplayerPlayersDir, "player_stats.yml");
+        this.playerRecentFile = new File(singleplayerPlayersDir, "player_recent.yml");
         
-        // Create directories if they don't exist
-        if (!recordsDir.exists()) {
-            recordsDir.mkdirs();
+        // Create directory structure
+        createDirectoryStructure();
+    }
+    
+    private void createDirectoryStructure() {
+        plugin.debugLog("Creating data directory structure...");
+        
+        // Create main data directory
+        if (!dataDir.exists()) {
+            dataDir.mkdirs();
+            plugin.debugLog("Created data directory: " + dataDir.getAbsolutePath());
         }
+        
+        // Create singleplayer directories
+        if (!singleplayerDir.exists()) {
+            singleplayerDir.mkdirs();
+            plugin.debugLog("Created singleplayer directory: " + singleplayerDir.getAbsolutePath());
+        }
+        if (!singleplayerCoursesDir.exists()) {
+            singleplayerCoursesDir.mkdirs();
+            plugin.debugLog("Created singleplayer courses directory: " + singleplayerCoursesDir.getAbsolutePath());
+        }
+        if (!singleplayerPlayersDir.exists()) {
+            singleplayerPlayersDir.mkdirs();
+            plugin.debugLog("Created singleplayer players directory: " + singleplayerPlayersDir.getAbsolutePath());
+        }
+        
+        // Create multiplayer directories (for future use)
+        if (!multiplayerDir.exists()) {
+            multiplayerDir.mkdirs();
+            plugin.debugLog("Created multiplayer directory: " + multiplayerDir.getAbsolutePath());
+        }
+        if (!multiplayerCoursesDir.exists()) {
+            multiplayerCoursesDir.mkdirs();
+            plugin.debugLog("Created multiplayer courses directory: " + multiplayerCoursesDir.getAbsolutePath());
+        }
+        if (!multiplayerPlayersDir.exists()) {
+            multiplayerPlayersDir.mkdirs();
+            plugin.debugLog("Created multiplayer players directory: " + multiplayerPlayersDir.getAbsolutePath());
+        }
+        
+        plugin.debugLog("Data directory structure created successfully");
     }
     
     @Override
@@ -59,7 +109,11 @@ public class YAMLRecordManager implements RecordManager {
     }
     
     private void saveToCourseRecords(String player, String course, double time, CourseType type) throws IOException {
-        File courseFile = new File(recordsDir, course + "_records.yml");
+        // Determine which courses directory to use based on type
+        File coursesDir = (type == CourseType.SINGLEPLAYER) ? singleplayerCoursesDir : multiplayerCoursesDir;
+        File courseFile = new File(coursesDir, course + "_records.yml");
+        
+        plugin.debugLog("Saving to course file: " + courseFile.getAbsolutePath());
         FileConfiguration config = YamlConfiguration.loadConfiguration(courseFile);
         
         // Get existing records
@@ -176,7 +230,10 @@ public class YAMLRecordManager implements RecordManager {
     
     @Override
     public List<RaceRecord> getTopTimes(String course, int limit) {
-        File courseFile = new File(recordsDir, course + "_records.yml");
+        // For now, assume singleplayer (can be enhanced later to support both types)
+        File courseFile = new File(singleplayerCoursesDir, course + "_records.yml");
+        
+        plugin.debugLog("Looking for course records file: " + courseFile.getAbsolutePath());
         if (!courseFile.exists()) {
             return new ArrayList<>();
         }
