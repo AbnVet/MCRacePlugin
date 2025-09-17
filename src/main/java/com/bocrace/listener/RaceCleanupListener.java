@@ -98,7 +98,13 @@ public class RaceCleanupListener implements Listener {
                        ", State: " + race.getState() + 
                        ", Duration: " + race.getCurrentDurationMs() + "ms");
         
-        // End the race as DQ
+        // Don't DQ if race is already finished - this is normal boat cleanup
+        if (race.getState() == ActiveRace.State.FINISHED) {
+            plugin.debugLog("🚫 IGNORING boat exit - race already finished normally");
+            return;
+        }
+        
+        // End the race as DQ (only if not already finished)
         String dqMessage = "Exited boat";
         plugin.getRaceManager().endRace(playerUuid, ActiveRace.State.DQ, dqMessage);
         

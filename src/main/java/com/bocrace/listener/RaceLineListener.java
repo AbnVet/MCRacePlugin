@@ -7,6 +7,8 @@ import com.bocrace.race.ActiveRace;
 import com.bocrace.util.BoatManager;
 import com.bocrace.util.LineDetection;
 import com.bocrace.util.TeleportUtil;
+import com.bocrace.util.SoundEffectManager;
+import com.bocrace.model.RaceRecord;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -30,11 +32,13 @@ public class RaceLineListener implements Listener {
     private final BOCRacePlugin plugin;
     private final BoatManager boatManager;
     private final TeleportUtil teleportUtil;
+    private final SoundEffectManager soundEffectManager;
     
     public RaceLineListener(BOCRacePlugin plugin, BoatManager boatManager, TeleportUtil teleportUtil) {
         this.plugin = plugin;
         this.boatManager = boatManager;
         this.teleportUtil = teleportUtil;
+        this.soundEffectManager = plugin.getSoundEffectManager();
     }
     
     @EventHandler
@@ -120,11 +124,11 @@ public class RaceLineListener implements Listener {
             // Get player and send feedback
             Player player = getPlayerFromBoat(boat);
             if (player != null) {
-                // Play start sound (DING!)
-                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.5f);
+                // Play start sound and effects using SoundEffectManager
+                soundEffectManager.playRaceStartEffects(player, player.getLocation());
                 
                 // Send start message
-                player.sendMessage("§a🏁 Timer started! Race in progress...");
+                player.sendMessage("§a🏁 Timer started!");
                 
                 plugin.raceDebugLog("🎵 Start sound played and timer started for " + player.getName());
             }
@@ -168,14 +172,14 @@ public class RaceLineListener implements Listener {
         Player player = getPlayerFromBoat(boat);
         if (player == null) return;
         
-        // Always update ActionBar - let Bukkit handle the timing
+        // Always use ActionBar for smooth live stopwatch display
         String timerText = race.getFormattedCurrentTime();
         player.sendActionBar(Component.text(timerText, NamedTextColor.AQUA));
         
         // Debug every 1 second (1000ms) to avoid spam
         long currentTime = System.currentTimeMillis();
         if (currentTime % 1000 < 50) { // Log roughly every second
-            plugin.raceDebugLog("⏱️ Timer update - " + timerText + " for " + race.getPlayerName());
+            plugin.raceDebugLog("⏱️ Timer update - " + timerText + " for " + race.getPlayerName() + " (mode: actionbar)");
         }
     }
     
@@ -196,17 +200,29 @@ public class RaceLineListener implements Listener {
             
             plugin.raceDebugLog("🕐 Final time calculated: " + finalTimeMs + "ms (" + finalTimeFormatted + ")");
             
-            // Play celebration sound (LEVEL UP!)
-            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+            // Play celebration sound and effects using SoundEffectManager
+            plugin.raceDebugLog("🐛 About to play finish effects...");
+            soundEffectManager.playRaceFinishEffects(player, player.getLocation());
             plugin.raceDebugLog("🎵 Celebration sound played");
-            
-            // Spawn celebration particles (FIREWORKS!)
-            player.getWorld().spawnParticle(Particle.FIREWORK, player.getLocation().add(0, 2, 0), 
-                                          20, 1.0, 1.0, 1.0, 0.1);
             plugin.raceDebugLog("🎆 Firework particles spawned");
             
             // Send completion message
-            player.sendMessage("§a🏁 You finished in: " + finalTimeFormatted.replace("Race Time: ", "") + "!");
+            String finishMessage = plugin.getConfig().getString("messages.race-finish", "§a🏁 You finished in: {time}!");
+            finishMessage = finishMessage.replace("{time}", finalTimeFormatted.replace("Race Time: ", ""));
+            player.sendMessage(finishMessage);
+            
+            // Check if it's a personal best
+            try {
+                RaceRecord bestRecord = plugin.getRecordManager().getPlayerBestTime(race.getPlayerName(), race.getCourseName());
+                if (bestRecord == null || finalTimeMs < (bestRecord.getTime() * 1000)) { // Convert seconds to ms for comparison
+                    String pbMessage = plugin.getConfig().getString("messages.personal-best", "§a§l⭐ NEW PERSONAL BEST! §a§l⭐");
+                    player.sendMessage(pbMessage);
+                    soundEffectManager.playPersonalBestEffects(player, player.getLocation());
+                    plugin.raceDebugLog("🌟 NEW PERSONAL BEST! - Player: " + race.getPlayerName() + ", Time: " + finalTimeMs + "ms");
+                }
+            } catch (Exception e) {
+                plugin.raceDebugLog("Error checking personal best: " + e.getMessage());
+            }
             
             // Save race record
             plugin.getRecordManager().saveRaceRecord(
@@ -221,12 +237,22 @@ public class RaceLineListener implements Listener {
                                ", Time: " + finalTimeMs + "ms");
             
             // Teleport back to lobby after a short delay
+            plugin.raceDebugLog("🐛 Scheduling teleport in 3 seconds...");
             new BukkitRunnable() {
                 @Override
                 public void run() {
                     if (player.isOnline()) {
-                        plugin.raceDebugLog("🚀 Teleporting player back to lobby after race completion");
+                        // Check if race is still finished (not DQ'd by boat exit)
+                        ActiveRace currentRace = plugin.getRaceManager().getActiveRace(player.getUniqueId());
+                        if (currentRace == null || currentRace.getState() != ActiveRace.State.FINISHED) {
+                            plugin.raceDebugLog("🚫 CANCELLING TELEPORT - Race state changed or player no longer racing");
+                            return;
+                        }
+                        
+                        plugin.raceDebugLog("🚀 EXECUTING TELEPORT - Player: " + player.getName() + " to lobby after race completion");
+                        plugin.raceDebugLog("🐛 Player current location before teleport: " + player.getLocation());
                         teleportUtil.teleportToLobby(player, course, "race_complete");
+                        plugin.raceDebugLog("🐛 Player location after teleport: " + player.getLocation());
                     }
                 }
             }.runTaskLater(plugin, 60L); // 3 second delay

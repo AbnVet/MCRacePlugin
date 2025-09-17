@@ -28,7 +28,7 @@ public class TeleportUtil {
             plugin.raceDebugLog("🛡️ Using pre-race location for emergency teleport");
             boolean success = player.teleport(preRaceLocation);
             if (success) {
-                player.sendMessage("§e⚠️ Race system error! Returned to your previous location.");
+                player.sendMessage("§a✅ Returned to safety.");
                 return true;
             }
         }
@@ -86,13 +86,13 @@ public class TeleportUtil {
             // Send appropriate message based on reason
             switch (reason.toLowerCase()) {
                 case "race_complete":
-                    player.sendMessage("§aRace completed! Returned to " + locationName + ".");
+                    player.sendMessage("§a🏁 Race completed! Returned to " + locationName + ".");
                     break;
                 case "course_busy":
                     player.sendMessage("§eCourse is in use. Please wait in the " + locationName + ".");
                     break;
                 case "race_dq":
-                    player.sendMessage("§cRace ended. Returned to " + locationName + ".");
+                    player.sendMessage("§c⚠️ Race disqualified - exited boat. Returned to " + locationName + ".");
                     break;
                 default:
                     player.sendMessage("§aTeleported to " + locationName + " for course '" + course.getName() + "'.");

@@ -12,6 +12,7 @@ com\bocrace\BOCRacePlugin.class
 com\bocrace\model\Course.class
 com\bocrace\listener\StartButtonListener.class
 com\bocrace\race\ActiveRace$State.class
+com\bocrace\util\SoundEffectManager.class
 com\bocrace\listener\SetupListener.class
 com\bocrace\race\RaceManager.class
 com\bocrace\command\BOCRaceCommand.class

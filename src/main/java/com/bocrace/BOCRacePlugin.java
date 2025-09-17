@@ -14,6 +14,7 @@ import com.bocrace.storage.YAMLRecordManager;
 import com.bocrace.util.PDCKeys;
 import com.bocrace.util.BoatManager;
 import com.bocrace.util.TeleportUtil;
+import com.bocrace.util.SoundEffectManager;
 import com.bocrace.race.ActiveRace;
 import com.bocrace.model.Course;
 import org.bukkit.Location;
@@ -36,6 +37,7 @@ public class BOCRacePlugin extends JavaPlugin {
     private PDCKeys pdcKeys;
     private BoatManager boatManager;
     private TeleportUtil teleportUtil;
+    private SoundEffectManager soundEffectManager;
     
     // Setup mode tracking
     private Map<UUID, SetupMode> playerSetupModes;
@@ -66,6 +68,7 @@ public class BOCRacePlugin extends JavaPlugin {
         pdcKeys = new PDCKeys(this);
         boatManager = new BoatManager(this, pdcKeys);
         teleportUtil = new TeleportUtil(this);
+        soundEffectManager = new SoundEffectManager(this);
         debugLog("Race utilities initialized successfully");
 
         // Register the main command
@@ -175,6 +178,10 @@ public class BOCRacePlugin extends JavaPlugin {
     
     public TeleportUtil getTeleportUtil() {
         return teleportUtil;
+    }
+    
+    public SoundEffectManager getSoundEffectManager() {
+        return soundEffectManager;
     }
     
     // Setup mode management

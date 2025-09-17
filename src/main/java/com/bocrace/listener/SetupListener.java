@@ -2,6 +2,7 @@ package com.bocrace.listener;
 
 import com.bocrace.BOCRacePlugin;
 import com.bocrace.model.Course;
+import com.bocrace.util.SoundEffectManager;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -15,9 +16,11 @@ import org.bukkit.event.player.PlayerQuitEvent;
 public class SetupListener implements Listener {
     
     private final BOCRacePlugin plugin;
+    private final SoundEffectManager soundEffectManager;
     
     public SetupListener(BOCRacePlugin plugin) {
         this.plugin = plugin;
+        this.soundEffectManager = plugin.getSoundEffectManager();
     }
     
     @EventHandler
@@ -120,7 +123,7 @@ public class SetupListener implements Listener {
         
         // Success messages and sounds
         player.sendMessage("§e⚡ Get ready to race! Cross the start line to begin timing.");
-        player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f);
+        soundEffectManager.playBoatSpawnEffects(player, player.getLocation());
         
         // Record course usage
         course.recordUsage(player.getName());
@@ -214,11 +217,11 @@ public class SetupListener implements Listener {
         String courseName = setupMode.getCourseName();
         String action = setupMode.getAction();
         
-        // For boat spawn, use player's looking direction
-        if (action.equals("setboatspawn")) {
+        // For boat spawn and lobby locations, use player's looking direction
+        if (action.equals("setboatspawn") || action.equals("setmainlobby") || action.equals("setcourselobby")) {
             location.setYaw(player.getLocation().getYaw());
             location.setPitch(player.getLocation().getPitch());
-            plugin.debugLog("Captured player direction for boat spawn - Yaw: " + location.getYaw() + ", Pitch: " + location.getPitch());
+            plugin.debugLog("Captured player direction for " + action + " - Yaw: " + location.getYaw() + ", Pitch: " + location.getPitch());
         }
         
         plugin.getLogger().info("[DEBUG] Right-click captured - Player: " + player.getName() + 

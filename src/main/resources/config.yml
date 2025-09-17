@@ -5,10 +5,23 @@ race-timeout: 60
 # Maximum players per multiplayer race
 max-players: 10
 
-# Sound settings
+# Sound and particle settings
 sounds:
-  start-ding: true
-  finish-fireworks: true
+  enabled: true
+  race-start: "BLOCK_NOTE_BLOCK_BELL"
+  race-finish: "ENTITY_PLAYER_LEVELUP"
+  personal-best: "UI_TOAST_CHALLENGE_COMPLETE"
+  boat-spawn: "ENTITY_BOAT_PADDLE_WATER"
+  setup-success: "ENTITY_EXPERIENCE_ORB_PICKUP"
+  setup-enter: "BLOCK_NOTE_BLOCK_PLING"
+  error: "ENTITY_VILLAGER_NO"
+
+particles:
+  enabled: true
+  race-start: "FIREWORK"
+  race-finish: "VILLAGER_HAPPY"
+  boat-spawn: "SPLASH"
+  setup-success: "VILLAGER_HAPPY"
 
 # Color settings
 colors:
@@ -19,6 +32,23 @@ colors:
 debug: false
 debug-race: false    # Specific debug for race mechanics (button clicks, line detection, etc.)
 debug-setup: false  # Specific debug for course setup commands
+
+# Message customization
+messages:
+  race-start: "§a§l🏁 RACE STARTED! §a§lGO GO GO!"
+  race-finish: "§6§l🏆 RACE FINISHED! §6§lTime: {time}"
+  personal-best: "§a§l⭐ NEW PERSONAL BEST! §a§l⭐"
+  disqualified: "§c§l❌ DISQUALIFIED! §cYou left your boat during the race."
+  already-racing: "§c§l❌ You are already in a race!"
+  course-occupied: "§c§l❌ Course is currently occupied!"
+  setup-enter: "§e§l⚙ SETUP MODE ACTIVE"
+  setup-exit: "§c§l⚙ SETUP MODE DEACTIVATED"
+  setup-success: "§a§l✓ {component} §aset for course §6{course}"
+
+# Timer display options
+timer:
+  display-mode: "actionbar"  # Using actionbar for smooth live stopwatch display
+  update-interval: 100       # Milliseconds between updates (100ms = 10 updates per second)
 
 # Configuration version (for future updates)
 config-version: 1
