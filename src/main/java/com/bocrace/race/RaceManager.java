@@ -62,10 +62,15 @@ public class RaceManager {
     }
     
     /**
-     * Get a player's current active race
+     * Get a player's current active race (only returns truly active races, not finished/DQ ghosts)
      */
     public ActiveRace getActiveRace(UUID playerUuid) {
-        return activeRaces.get(playerUuid);
+        ActiveRace race = activeRaces.get(playerUuid);
+        // Only return truly active races, not finished/DQ ghosts that cause interference
+        if (race != null && (race.getState() == ActiveRace.State.ARMED || race.getState() == ActiveRace.State.RUNNING)) {
+            return race;
+        }
+        return null; // Don't return finished/DQ ghosts
     }
     
     /**

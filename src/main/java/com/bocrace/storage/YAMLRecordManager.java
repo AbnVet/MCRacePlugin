@@ -233,7 +233,7 @@ public class YAMLRecordManager implements RecordManager {
         // For now, assume singleplayer (can be enhanced later to support both types)
         File courseFile = new File(singleplayerCoursesDir, course + "_records.yml");
         
-        plugin.debugLog("Looking for course records file: " + courseFile.getAbsolutePath());
+        // Removed debug spam - this gets called constantly by PlaceholderAPI
         if (!courseFile.exists()) {
             return new ArrayList<>();
         }

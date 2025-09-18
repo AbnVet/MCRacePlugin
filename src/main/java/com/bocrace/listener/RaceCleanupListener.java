@@ -68,8 +68,8 @@ public class RaceCleanupListener implements Listener {
         String dqMessage = "Disconnected";
         plugin.getRaceManager().endRace(playerUuid, ActiveRace.State.DQ, dqMessage);
         
-        // Save DQ record if they were actually racing
-        if (race.getState() == ActiveRace.State.RUNNING) {
+        // Save DQ record if they were in a race (ARMED or RUNNING)
+        if (race.getState() == ActiveRace.State.RUNNING || race.getState() == ActiveRace.State.ARMED) {
             double timeSeconds = race.getCurrentDurationMs() / 1000.0;
             
             // Save as DQ record (negative time indicates DQ)
@@ -149,8 +149,8 @@ public class RaceCleanupListener implements Listener {
         String dqMessage = "Exited boat";
         plugin.getRaceManager().endRace(playerUuid, ActiveRace.State.DQ, dqMessage);
         
-        // Save DQ record if they were actually racing
-        if (race.getState() == ActiveRace.State.RUNNING) {
+        // Save DQ record if they were in a race (ARMED or RUNNING)
+        if (race.getState() == ActiveRace.State.RUNNING || race.getState() == ActiveRace.State.ARMED) {
             double timeSeconds = race.getCurrentDurationMs() / 1000.0;
             
             // Save as DQ record (negative time indicates DQ)
