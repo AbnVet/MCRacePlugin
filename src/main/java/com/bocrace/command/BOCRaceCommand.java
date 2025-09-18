@@ -1184,7 +1184,7 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         }
         
         // Get top 10 times for this course
-        java.util.List<com.bocrace.storage.RaceRecord> topTimes = plugin.getRecordManager().getTopTimes(courseName, 10);
+        java.util.List<RaceRecord> topTimes = plugin.getRecordManager().getTopTimes(courseName, 10);
         
         sender.sendMessage("§6§l🏆 MULTIPLAYER LEADERBOARD - " + courseName.toUpperCase());
         sender.sendMessage("§8" + "=".repeat(50));
@@ -1193,17 +1193,19 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage("§7No races completed on this course yet!");
         } else {
             for (int i = 0; i < topTimes.size(); i++) {
-                com.bocrace.storage.RaceRecord record = topTimes.get(i);
+                RaceRecord record = topTimes.get(i);
                 String medal = i == 0 ? "§6🥇" : i == 1 ? "§7🥈" : i == 2 ? "§c🥉" : "§e" + (i + 1) + ".";
                 
-                sender.sendMessage(medal + " §f" + record.getPlayerName() + " §7- §a" + 
+                sender.sendMessage(medal + " §f" + record.getPlayer() + " §7- §a" + 
                                  String.format("%.2fs", record.getTime()) + " §8(" + 
-                                 formatTimestamp(record.getTimestamp()) + ")");
+                                 record.getFormattedDate() + ")");
             }
         }
         
         sender.sendMessage("§8" + "=".repeat(50));
-        sender.sendMessage("§7Total races: §e" + plugin.getRecordManager().getCourseRaceCount(courseName));
+        // Get total races for this course by counting all records
+        java.util.List<RaceRecord> allCourseRecords = plugin.getRecordManager().getTopTimes(courseName, Integer.MAX_VALUE);
+        sender.sendMessage("§7Total races: §e" + allCourseRecords.size());
         
         return true;
     }
@@ -1231,11 +1233,11 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         }
         
         // Get recent multiplayer races for the player
-        java.util.List<com.bocrace.storage.RaceRecord> recentRaces = plugin.getRecordManager().getPlayerRecent(targetPlayer, 10);
+        java.util.List<RaceRecord> recentRaces = plugin.getRecordManager().getPlayerRecent(targetPlayer, 10);
         
         // Filter for multiplayer races only
-        java.util.List<com.bocrace.storage.RaceRecord> mpRaces = recentRaces.stream()
-            .filter(record -> record.getCourseType() == com.bocrace.model.CourseType.MULTIPLAYER)
+        java.util.List<RaceRecord> mpRaces = recentRaces.stream()
+            .filter(record -> record.getType() == com.bocrace.model.CourseType.MULTIPLAYER)
             .collect(java.util.stream.Collectors.toList());
         
         sender.sendMessage("§6§l🏁 RECENT MULTIPLAYER RACES - " + targetPlayer.toUpperCase());
@@ -1244,10 +1246,10 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         if (mpRaces.isEmpty()) {
             sender.sendMessage("§7No multiplayer races found for " + targetPlayer + "!");
         } else {
-            for (com.bocrace.storage.RaceRecord record : mpRaces) {
-                sender.sendMessage("§e" + record.getCourseName() + " §7- §a" + 
+            for (RaceRecord record : mpRaces) {
+                sender.sendMessage("§e" + record.getCourse() + " §7- §a" + 
                                  String.format("%.2fs", record.getTime()) + " §8(" + 
-                                 formatTimestamp(record.getTimestamp()) + ")");
+                                 record.getFormattedDate() + ")");
             }
         }
         

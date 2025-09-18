@@ -20,6 +20,7 @@ import com.bocrace.util.TeleportUtil;
 import com.bocrace.util.SoundEffectManager;
 import com.bocrace.race.ActiveRace;
 import com.bocrace.model.Course;
+import com.bocrace.integration.BOCRacePlaceholderExpansion;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -92,6 +93,14 @@ public class BOCRacePlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new MultiplayerButtonListener(this), this);
         getServer().getPluginManager().registerEvents(new RaceProtectionListener(this), this);
         debugLog("All event listeners registered successfully");
+
+        // Register PlaceholderAPI expansion
+        if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
+            new BOCRacePlaceholderExpansion(this).register();
+            getLogger().info("PlaceholderAPI expansion registered successfully!");
+        } else {
+            getLogger().warning("PlaceholderAPI not found! Placeholder support disabled.");
+        }
 
         getLogger().info("BOCRacePlugin has been enabled!");
     }

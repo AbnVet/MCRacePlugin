@@ -3,7 +3,7 @@ package com.bocrace.race;
 import com.bocrace.BOCRacePlugin;
 import com.bocrace.model.Course;
 import com.bocrace.model.CourseType;
-import com.bocrace.storage.RaceRecord;
+import com.bocrace.model.RaceRecord;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Boat;
