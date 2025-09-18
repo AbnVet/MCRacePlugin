@@ -118,8 +118,7 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
             case "list":
                 return handleMultiplayerList(sender);
             case "tp":
-                sender.sendMessage("§eMultiplayer tp not implemented yet.");
-                return true;
+                return handleMultiplayerTp(sender, args);
             case "info":
                 return handleMultiplayerInfo(sender, args);
             case "reload":
@@ -155,7 +154,7 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("§b/bocrace multiplayer edit <name> §7- Edit an existing multiplayer course");
         sender.sendMessage("§b/bocrace multiplayer delete <name> §7- Delete a multiplayer course");
         sender.sendMessage("§b/bocrace multiplayer list §7- List all multiplayer courses");
-        sender.sendMessage("§b/bocrace multiplayer tp <name> §7- Teleport to a multiplayer course");
+        sender.sendMessage("§b/bocrace multiplayer tp <name> §7- Teleport to a multiplayer course race lobby");
         sender.sendMessage("§b/bocrace multiplayer info <name> §7- Show course information");
         sender.sendMessage("§b/bocrace multiplayer reload §7- Reload multiplayer courses");
         sender.sendMessage("§b/bocrace multiplayer stats <name> §7- Show course statistics");
@@ -1099,6 +1098,54 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
                 sender.sendMessage("§7- " + course.getName() + " [Prefix: " + course.getPrefixDisplay() + "]");
             }
         }
+        return true;
+    }
+    
+    private boolean handleMultiplayerTp(CommandSender sender, String[] args) {
+        plugin.debugLog("Multiplayer tp command called - Player: " + sender.getName() + ", Args: " + java.util.Arrays.toString(args));
+        
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("§cThis command can only be used by players!");
+            plugin.debugLog("Multiplayer tp command failed - not a player");
+            return true;
+        }
+        
+        if (args.length < 3) {
+            sender.sendMessage("§cUsage: /bocrace multiplayer tp <coursename>");
+            plugin.debugLog("Multiplayer tp command failed - insufficient arguments");
+            return true;
+        }
+        
+        String courseName = args[2];
+        plugin.debugLog("Looking for multiplayer course to teleport to: " + courseName);
+        
+        Course course = plugin.getStorageManager().getCourse(courseName);
+        
+        if (course == null || course.getType() != CourseType.MULTIPLAYER) {
+            sender.sendMessage("§cMultiplayer course '" + courseName + "' not found!");
+            plugin.debugLog("Multiplayer tp command failed - course not found or wrong type: " + courseName);
+            return true;
+        }
+        
+        Player player = (Player) sender;
+        
+        // Check if mpraceLobbySpawn is set (this is the designated spawn location for multiplayer)
+        Location teleportLocation = course.getMpraceLobbySpawn();
+        
+        if (teleportLocation == null) {
+            sender.sendMessage("§cCourse '" + courseName + "' has no race lobby spawn set! Please set up the race lobby spawn location first.");
+            sender.sendMessage("§7Use: /bocrace multiplayer setup " + courseName + " setraceLobbySpawn");
+            plugin.debugLog("Multiplayer tp command failed - no race lobby spawn for course: " + courseName);
+            return true;
+        }
+        
+        // Teleport to the race lobby spawn
+        player.teleport(teleportLocation);
+        sender.sendMessage("§aTeleported to race lobby for course '" + courseName + "'!");
+        sender.sendMessage("§7Use the buttons here to create/join multiplayer races!");
+        plugin.debugLog("Player teleported to race lobby for course: " + courseName + " at " + 
+                       teleportLocation.getWorld().getName() + " " + 
+                       teleportLocation.getBlockX() + "," + teleportLocation.getBlockY() + "," + teleportLocation.getBlockZ());
         return true;
     }
     
