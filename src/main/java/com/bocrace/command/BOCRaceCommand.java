@@ -126,11 +126,9 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
                 sender.sendMessage("§eMultiplayer reload not implemented yet.");
                 return true;
             case "stats":
-                sender.sendMessage("§eMultiplayer stats not implemented yet.");
-                return true;
+                return handleMultiplayerStats(sender, args);
             case "recent":
-                sender.sendMessage("§eMultiplayer recent not implemented yet.");
-                return true;
+                return handleMultiplayerRecent(sender, args);
             default:
                 sender.sendMessage("§cUnknown multiplayer command. Use /bocrace help for available commands.");
                 return true;
@@ -1161,5 +1159,115 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
                           (setCount >= totalRequired ? "§a✅ READY FOR RACING" : "§c❌ INCOMPLETE"));
         
         return true;
+    }
+    
+    /**
+     * Handle multiplayer stats command
+     */
+    private boolean handleMultiplayerStats(CommandSender sender, String[] args) {
+        if (args.length < 3) {
+            sender.sendMessage("§cUsage: /bocrace multiplayer stats <course>");
+            return true;
+        }
+        
+        String courseName = args[2];
+        Course course = plugin.getStorageManager().getCourse(courseName);
+        
+        if (course == null) {
+            sender.sendMessage("§cCourse '" + courseName + "' not found!");
+            return true;
+        }
+        
+        if (course.getType() != com.bocrace.model.CourseType.MULTIPLAYER) {
+            sender.sendMessage("§cCourse '" + courseName + "' is not a multiplayer course!");
+            return true;
+        }
+        
+        // Get top 10 times for this course
+        java.util.List<com.bocrace.storage.RaceRecord> topTimes = plugin.getRecordManager().getTopTimes(courseName, 10);
+        
+        sender.sendMessage("§6§l🏆 MULTIPLAYER LEADERBOARD - " + courseName.toUpperCase());
+        sender.sendMessage("§8" + "=".repeat(50));
+        
+        if (topTimes.isEmpty()) {
+            sender.sendMessage("§7No races completed on this course yet!");
+        } else {
+            for (int i = 0; i < topTimes.size(); i++) {
+                com.bocrace.storage.RaceRecord record = topTimes.get(i);
+                String medal = i == 0 ? "§6🥇" : i == 1 ? "§7🥈" : i == 2 ? "§c🥉" : "§e" + (i + 1) + ".";
+                
+                sender.sendMessage(medal + " §f" + record.getPlayerName() + " §7- §a" + 
+                                 String.format("%.2fs", record.getTime()) + " §8(" + 
+                                 formatTimestamp(record.getTimestamp()) + ")");
+            }
+        }
+        
+        sender.sendMessage("§8" + "=".repeat(50));
+        sender.sendMessage("§7Total races: §e" + plugin.getRecordManager().getCourseRaceCount(courseName));
+        
+        return true;
+    }
+    
+    /**
+     * Handle multiplayer recent command
+     */
+    private boolean handleMultiplayerRecent(CommandSender sender, String[] args) {
+        String targetPlayer;
+        
+        if (args.length >= 3) {
+            // Admin checking another player: /bocrace multiplayer recent <player>
+            if (!sender.hasPermission("bocrace.admin")) {
+                sender.sendMessage("§cYou don't have permission to view other players' recent races!");
+                return true;
+            }
+            targetPlayer = args[2];
+        } else {
+            // Player checking their own: /bocrace multiplayer recent
+            if (!(sender instanceof org.bukkit.entity.Player)) {
+                sender.sendMessage("§cConsole must specify a player: /bocrace multiplayer recent <player>");
+                return true;
+            }
+            targetPlayer = sender.getName();
+        }
+        
+        // Get recent multiplayer races for the player
+        java.util.List<com.bocrace.storage.RaceRecord> recentRaces = plugin.getRecordManager().getPlayerRecent(targetPlayer, 10);
+        
+        // Filter for multiplayer races only
+        java.util.List<com.bocrace.storage.RaceRecord> mpRaces = recentRaces.stream()
+            .filter(record -> record.getCourseType() == com.bocrace.model.CourseType.MULTIPLAYER)
+            .collect(java.util.stream.Collectors.toList());
+        
+        sender.sendMessage("§6§l🏁 RECENT MULTIPLAYER RACES - " + targetPlayer.toUpperCase());
+        sender.sendMessage("§8" + "=".repeat(50));
+        
+        if (mpRaces.isEmpty()) {
+            sender.sendMessage("§7No multiplayer races found for " + targetPlayer + "!");
+        } else {
+            for (com.bocrace.storage.RaceRecord record : mpRaces) {
+                sender.sendMessage("§e" + record.getCourseName() + " §7- §a" + 
+                                 String.format("%.2fs", record.getTime()) + " §8(" + 
+                                 formatTimestamp(record.getTimestamp()) + ")");
+            }
+        }
+        
+        sender.sendMessage("§8" + "=".repeat(50));
+        
+        // Show player stats
+        int totalMpRaces = plugin.getRecordManager().getPlayerRacesByType(targetPlayer, com.bocrace.model.CourseType.MULTIPLAYER);
+        sender.sendMessage("§7Total multiplayer races: §e" + totalMpRaces);
+        
+        return true;
+    }
+    
+    /**
+     * Format timestamp for display
+     */
+    private String formatTimestamp(long timestamp) {
+        java.time.LocalDateTime dateTime = java.time.LocalDateTime.ofInstant(
+            java.time.Instant.ofEpochMilli(timestamp), 
+            java.time.ZoneId.systemDefault()
+        );
+        return dateTime.format(java.time.format.DateTimeFormatter.ofPattern("MM/dd HH:mm"));
     }
 }

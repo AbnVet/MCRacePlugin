@@ -2,6 +2,8 @@ package com.bocrace.race;
 
 import com.bocrace.BOCRacePlugin;
 import com.bocrace.model.Course;
+import com.bocrace.model.CourseType;
+import com.bocrace.storage.RaceRecord;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Boat;
@@ -234,6 +236,37 @@ public class MultiplayerRaceManager {
             
             // Play finish effects
             plugin.getSoundEffectManager().playRaceFinishEffects(player, player.getLocation(), race.getCourse());
+            
+            // 📊 SAVE MULTIPLAYER RACE STATISTICS (like singleplayer does)
+            try {
+                // Check if it's a personal best
+                RaceRecord bestRecord = plugin.getRecordManager().getPlayerBestTime(player.getName(), race.getCourse().getName());
+                if (bestRecord == null || result.getRaceTimeMs() < (bestRecord.getTime() * 1000)) {
+                    String pbMessage = plugin.getConfig().getString("messages.personal-best", "§a§l⭐ NEW PERSONAL BEST! §a§l⭐");
+                    player.sendMessage(pbMessage);
+                    plugin.getSoundEffectManager().playPersonalBestEffects(player, player.getLocation());
+                    plugin.multiplayerDebugLog("🌟 NEW MULTIPLAYER PB! - Player: " + player.getName() + 
+                                             ", Course: " + race.getCourse().getName() + 
+                                             ", Time: " + result.getRaceTimeMs() + "ms");
+                }
+                
+                // Save race record to database (convert ms to seconds like singleplayer)
+                plugin.getRecordManager().saveRaceRecord(
+                    player.getName(),
+                    race.getCourse().getName(),
+                    result.getRaceTimeMs() / 1000.0, // Convert to seconds
+                    CourseType.MULTIPLAYER
+                );
+                
+                plugin.multiplayerDebugLog("💾 Multiplayer race record saved - Player: " + player.getName() + 
+                                         ", Course: " + race.getCourse().getName() + 
+                                         ", Time: " + result.getRaceTimeMs() + "ms" +
+                                         ", Placement: #" + result.getPlacement());
+                
+            } catch (Exception e) {
+                plugin.getLogger().warning("Failed to save multiplayer race record for " + player.getName() + ": " + e.getMessage());
+                plugin.multiplayerDebugLog("❌ Error saving race record: " + e.getMessage());
+            }
             
             // Remove player's boat (safe now - player not tracked for DQ)
             Boat boat = plugin.getBoatManager().findRaceBoatByPlayer(player.getUniqueId());
