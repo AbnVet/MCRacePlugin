@@ -46,6 +46,12 @@ public class MultiplayerButtonListener implements Listener {
             return;
         }
         
+        // CRITICAL FIX: Only process actual buttons (like singleplayer does)
+        if (!isButton(clickedBlock.getType())) {
+            plugin.multiplayerDebugLog("❌ Block ignored - not a button: " + clickedBlock.getType().name());
+            return;
+        }
+        
         Player player = event.getPlayer();
         Location blockLocation = clickedBlock.getLocation();
         
@@ -450,5 +456,12 @@ public class MultiplayerButtonListener implements Listener {
         START_RACE,     // Leader starts race + triggers redstone
         CANCEL_RACE,    // Leader cancels race (optional)
         RETURN_LOBBY    // Return to race lobby spawn
+    }
+    
+    /**
+     * Check if block material is a button (copied from singleplayer)
+     */
+    private boolean isButton(org.bukkit.Material material) {
+        return material.name().contains("BUTTON");
     }
 }
