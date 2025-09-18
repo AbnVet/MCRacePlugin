@@ -319,6 +319,26 @@ public class MultiplayerRaceManager {
         if (player != null) {
             player.sendMessage("§c§l❌ DISQUALIFIED! §c" + reason);
             
+            // Save DQ record to persistent storage (CRITICAL FIX)
+            try {
+                double timeSeconds = 0.0;
+                if (race.getRaceStartTimeMs() > 0) {
+                    timeSeconds = (System.currentTimeMillis() - race.getRaceStartTimeMs()) / 1000.0;
+                }
+                
+                plugin.getRecordManager().saveRaceRecord(
+                    player.getName() + " (DQ - " + reason + ")",
+                    race.getCourse().getName(),
+                    -timeSeconds, // Negative indicates DQ
+                    CourseType.MULTIPLAYER
+                );
+                
+                plugin.multiplayerDebugLog("DQ record saved - Player: " + player.getName() + 
+                                         ", Reason: " + reason + ", Time: " + timeSeconds + "s");
+            } catch (Exception e) {
+                plugin.getLogger().warning("Failed to save DQ record for " + player.getName() + ": " + e.getMessage());
+            }
+            
             // Remove boat
             Boat boat = plugin.getBoatManager().findRaceBoatByPlayer(playerId);
             if (boat != null) {

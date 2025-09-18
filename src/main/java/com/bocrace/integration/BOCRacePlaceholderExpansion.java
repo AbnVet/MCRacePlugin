@@ -415,10 +415,14 @@ public class BOCRacePlaceholderExpansion extends PlaceholderExpansion {
             
             // Check if it was a DQ (negative time or "(DQ)" in player name)
             if (lastRace.getTime() < 0 || lastRace.getPlayer().contains("(DQ)")) {
-                // Extract DQ reason from player name if available
+                // Extract DQ reason from player name
                 String playerName = lastRace.getPlayer();
-                if (playerName.contains("(DQ)")) {
-                    // Try to extract reason - format might be "PlayerName (DQ)" or have reason
+                if (playerName.contains("(DQ - ")) {
+                    // New format: "PlayerName (DQ - reason)"
+                    String reason = extractDQReason(playerName);
+                    return "DQ - " + reason;
+                } else if (playerName.contains("(DQ)")) {
+                    // Old format: "PlayerName (DQ)" - guess reason from time
                     return "DQ - " + getDQReasonFromTime(Math.abs(lastRace.getTime()));
                 } else {
                     return "DQ - Unknown reason";
@@ -487,8 +491,13 @@ public class BOCRacePlaceholderExpansion extends PlaceholderExpansion {
             
             for (RaceRecord race : recentRaces) {
                 if (race.getTime() < 0 || race.getPlayer().contains("(DQ)")) {
-                    // Try to extract reason from the data
-                    return getDQReasonFromTime(Math.abs(race.getTime()));
+                    // Extract reason from player name
+                    String playerName = race.getPlayer();
+                    if (playerName.contains("(DQ - ")) {
+                        return extractDQReason(playerName);
+                    } else {
+                        return getDQReasonFromTime(Math.abs(race.getTime()));
+                    }
                 }
             }
             
@@ -520,9 +529,22 @@ public class BOCRacePlaceholderExpansion extends PlaceholderExpansion {
         }
     }
     
+    private String extractDQReason(String playerNameWithDQ) {
+        // Extract reason from format: "PlayerName (DQ - reason)"
+        int startIndex = playerNameWithDQ.indexOf("(DQ - ");
+        if (startIndex != -1) {
+            int reasonStart = startIndex + "(DQ - ".length();
+            int reasonEnd = playerNameWithDQ.lastIndexOf(")");
+            if (reasonEnd > reasonStart) {
+                return playerNameWithDQ.substring(reasonStart, reasonEnd);
+            }
+        }
+        return "Unknown";
+    }
+    
     private String getDQReasonFromTime(double timeSeconds) {
-        // This is a basic implementation - in the future we could store DQ reasons more explicitly
-        // For now, we'll make educated guesses based on common DQ times
+        // Fallback for old DQ records without explicit reasons
+        // Make educated guesses based on common DQ times
         if (timeSeconds < 5.0) {
             return "Early exit";
         } else if (timeSeconds > 50.0) {

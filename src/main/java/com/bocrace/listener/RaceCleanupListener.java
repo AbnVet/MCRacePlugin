@@ -74,7 +74,7 @@ public class RaceCleanupListener implements Listener {
             
             // Save as DQ record (negative time indicates DQ)
             plugin.getRecordManager().saveRaceRecord(
-                race.getPlayerName() + " (DQ)", 
+                race.getPlayerName() + " (DQ - " + dqMessage + ")", 
                 race.getCourseName(), 
                 -timeSeconds, // Negative indicates DQ
                 race.getCourseType()
@@ -155,7 +155,7 @@ public class RaceCleanupListener implements Listener {
             
             // Save as DQ record (negative time indicates DQ)
             plugin.getRecordManager().saveRaceRecord(
-                race.getPlayerName() + " (DQ)", 
+                race.getPlayerName() + " (DQ - " + dqMessage + ")", 
                 race.getCourseName(), 
                 -timeSeconds, // Negative indicates DQ
                 race.getCourseType()
