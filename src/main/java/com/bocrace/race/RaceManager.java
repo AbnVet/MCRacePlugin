@@ -172,13 +172,23 @@ public class RaceManager {
         }
         
         // Required components for singleplayer racing
-        boolean hasStartButton = course.getSpstartbutton() != null;
         boolean hasBoatSpawn = course.getSpboatspawn() != null;
         boolean hasStartLine = course.getSpstart1() != null && course.getSpstart2() != null;
         boolean hasFinishLine = course.getSpfinish1() != null && course.getSpfinish2() != null;
-        boolean hasCourseLobby = course.getSpcourselobby() != null; // Required per spec
+        boolean hasCourseLobby = course.getSpcourselobby() != null; // Always required
         
-        return hasStartButton && hasBoatSpawn && hasStartLine && hasFinishLine && hasCourseLobby;
+        // Button logic: If mainlobby spawn is set, mainlobby button is required
+        // If mainlobby spawn is NOT set, courselobby button is required
+        boolean hasValidButtonSetup;
+        if (course.getSpmainlobby() != null) {
+            // Main lobby spawn is set, so main lobby button must also be set
+            hasValidButtonSetup = course.getSpmainlobbybutton() != null;
+        } else {
+            // No main lobby spawn, so course lobby button is required
+            hasValidButtonSetup = course.getSpcourselobbybutton() != null;
+        }
+        
+        return hasValidButtonSetup && hasBoatSpawn && hasStartLine && hasFinishLine && hasCourseLobby;
     }
     
     /**

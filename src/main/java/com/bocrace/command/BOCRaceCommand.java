@@ -423,22 +423,35 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("§7Created on: §f" + course.getCreatedOn());
         sender.sendMessage("§7Last edited: §f" + course.getLastEdited());
         
-        // Show setup status
+        // Show setup status with correct logic
         sender.sendMessage("§6Setup Status:");
-        sender.sendMessage("§7- Start Button: " + (course.getSpstartbutton() != null ? "§aSET" : "§cNOT SET"));
+        
+        // Show button setup based on lobby configuration
+        if (course.getSpmainlobby() != null) {
+            // Main lobby is set, so main lobby button is required
+            sender.sendMessage("§7- Main Lobby Spawn: " + (course.getSpmainlobby() != null ? "§aSET" : "§cNOT SET"));
+            sender.sendMessage("§7- Main Lobby Button: " + (course.getSpmainlobbybutton() != null ? "§aSET" : "§cNOT SET §c(REQUIRED)"));
+            sender.sendMessage("§7- Course Lobby Button: " + (course.getSpcourselobbybutton() != null ? "§aSET" : "§7NOT SET §8(optional)"));
+        } else {
+            // No main lobby, so course lobby button is required
+            sender.sendMessage("§7- Main Lobby Spawn: §7NOT SET §8(optional)");
+            sender.sendMessage("§7- Main Lobby Button: " + (course.getSpmainlobbybutton() != null ? "§aSET" : "§7NOT SET §8(optional)"));
+            sender.sendMessage("§7- Course Lobby Button: " + (course.getSpcourselobbybutton() != null ? "§aSET" : "§cNOT SET §c(REQUIRED)"));
+        }
+        
         sender.sendMessage("§7- Boat Spawn: " + (course.getSpboatspawn() != null ? "§aSET" : "§cNOT SET"));
         sender.sendMessage("§7- Start Line Point 1: " + (course.getSpstart1() != null ? "§aSET" : "§cNOT SET"));
         sender.sendMessage("§7- Start Line Point 2: " + (course.getSpstart2() != null ? "§aSET" : "§cNOT SET"));
         sender.sendMessage("§7- Finish Line Point 1: " + (course.getSpfinish1() != null ? "§aSET" : "§cNOT SET"));
         sender.sendMessage("§7- Finish Line Point 2: " + (course.getSpfinish2() != null ? "§aSET" : "§cNOT SET"));
-        sender.sendMessage("§7- Return Point: " + (course.getSpreturn() != null ? "§aSET" : "§cNOT SET"));
-        sender.sendMessage("§7- Course Lobby: " + (course.getSpcourselobby() != null ? "§aSET" : "§cNOT SET"));
-        sender.sendMessage("§7- Main Lobby: " + (course.getSpmainlobby() != null ? "§aSET" : "§cNOT SET"));
+        sender.sendMessage("§7- Return Button: " + (course.getSpreturn() != null ? "§aSET" : "§cNOT SET"));
+        sender.sendMessage("§7- Course Lobby Spawn: " + (course.getSpcourselobby() != null ? "§aSET" : "§cNOT SET"));
         
-        // Show completion status
+        // Calculate completion status with correct logic
         int setCount = 0;
-        int totalCount = 9;
-        if (course.getSpstartbutton() != null) setCount++;
+        int totalCount = 8; // Fixed total (not 9)
+        
+        // Count required components
         if (course.getSpboatspawn() != null) setCount++;
         if (course.getSpstart1() != null) setCount++;
         if (course.getSpstart2() != null) setCount++;
@@ -446,7 +459,15 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         if (course.getSpfinish2() != null) setCount++;
         if (course.getSpreturn() != null) setCount++;
         if (course.getSpcourselobby() != null) setCount++;
-        if (course.getSpmainlobby() != null) setCount++;
+        
+        // Count button setup based on lobby configuration
+        if (course.getSpmainlobby() != null) {
+            // Main lobby is set, main lobby button is required
+            if (course.getSpmainlobbybutton() != null) setCount++;
+        } else {
+            // No main lobby, course lobby button is required
+            if (course.getSpcourselobbybutton() != null) setCount++;
+        }
         
         String completionColor = setCount == totalCount ? "§a" : (setCount > 0 ? "§e" : "§c");
         sender.sendMessage("§7Setup Progress: " + completionColor + setCount + "/" + totalCount + " complete");
@@ -856,11 +877,11 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         }
         
         Player player = (Player) sender;
-        plugin.setPlayerSetupMode(player, course.getName(), "setreturn");
+        plugin.setPlayerSetupMode(player, course.getName(), "setreturnmainbutton");
         
         player.sendMessage("§eRight-click the return/restart location for course '" + course.getName() + "'");
         player.sendMessage("§7You have 30 seconds to right-click a block!");
-        plugin.getLogger().info("[DEBUG] Player " + player.getName() + " entered setup mode for setreturn");
+        plugin.getLogger().info("[DEBUG] Player " + player.getName() + " entered setup mode for setreturnmainbutton");
         return true;
     }
     
@@ -874,11 +895,11 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         }
         
         Player player = (Player) sender;
-        plugin.setPlayerSetupMode(player, course.getName(), "setcourselobby");
+        plugin.setPlayerSetupMode(player, course.getName(), "setcourselobbyspawn");
         
         player.sendMessage("§eRight-click the course lobby location for course '" + course.getName() + "'");
         player.sendMessage("§7You have 30 seconds to right-click a block!");
-        plugin.getLogger().info("[DEBUG] Player " + player.getName() + " entered setup mode for setcourselobby");
+        plugin.getLogger().info("[DEBUG] Player " + player.getName() + " entered setup mode for setcourselobbyspawn");
         return true;
     }
     
@@ -892,11 +913,11 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         }
         
         Player player = (Player) sender;
-        plugin.setPlayerSetupMode(player, course.getName(), "setmainlobby");
+        plugin.setPlayerSetupMode(player, course.getName(), "setmainlobbyspawn");
         
         player.sendMessage("§eRight-click the main lobby location for course '" + course.getName() + "'");
         player.sendMessage("§7You have 30 seconds to right-click a block!");
-        plugin.getLogger().info("[DEBUG] Player " + player.getName() + " entered setup mode for setmainlobby");
+        plugin.getLogger().info("[DEBUG] Player " + player.getName() + " entered setup mode for setmainlobbyspawn");
         return true;
     }
     

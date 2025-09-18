@@ -1,4 +1,5 @@
 com\bocrace\util\BoatManager.class
+com\bocrace\integration\BOCRacePlaceholderExpansion.class
 com\bocrace\listener\RaceCleanupListener.class
 com\bocrace\util\PDCKeys.class
 com\bocrace\storage\StorageManager.class
