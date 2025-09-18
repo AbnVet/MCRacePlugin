@@ -106,6 +106,7 @@ public class ConfigManager {
             config.set("multiplayer.player-protection.prevent-fall-damage", false); // Allow for course obstacles
             config.set("multiplayer.player-protection.prevent-item-drops", true);
             config.set("multiplayer.player-protection.death-disqualifies", true);
+            config.set("multiplayer.player-protection.protect-boats", true); // Prevent boat damage/destruction
             
             // Race effects
             config.set("multiplayer.effects.night-vision.enabled", true);

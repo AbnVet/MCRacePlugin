@@ -2,11 +2,14 @@ package com.bocrace.listener;
 
 import com.bocrace.BOCRacePlugin;
 import com.bocrace.race.MultiplayerRace;
+import org.bukkit.entity.Boat;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.vehicle.VehicleDamageEvent;
+import org.bukkit.event.vehicle.VehicleDestroyEvent;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
@@ -52,8 +55,10 @@ public class RaceProtectionListener implements Listener {
                 // Mob damage
                 if (plugin.getConfig().getBoolean("multiplayer.player-protection.prevent-mob-damage", true)) {
                     event.setCancelled(true);
-                    player.sendMessage("§e⚡ Protected from mobs during race!");
-                    plugin.multiplayerDebugLog("Prevented mob damage to " + player.getName() + " during race");
+                    // Only log occasionally to prevent spam
+                    if (Math.random() < 0.1) { // 10% chance to log
+                        plugin.multiplayerDebugLog("Prevented mob damage to " + player.getName() + " during race");
+                    }
                 }
                 break;
                 
@@ -170,6 +175,96 @@ public class RaceProtectionListener implements Listener {
         if (player.hasPotionEffect(PotionEffectType.NIGHT_VISION)) {
             player.removePotionEffect(PotionEffectType.NIGHT_VISION);
             plugin.multiplayerDebugLog("Removed night vision from " + player.getName());
+        }
+    }
+    
+    /**
+     * Prevent boat damage during multiplayer races
+     */
+    @EventHandler
+    public void onBoatDamage(VehicleDamageEvent event) {
+        if (!(event.getVehicle() instanceof Boat)) {
+            return;
+        }
+        
+        Boat boat = (Boat) event.getVehicle();
+        
+        // Check if it's a race boat
+        if (!plugin.getBoatManager().isRaceBoat(boat)) {
+            return;
+        }
+        
+        // Get the player in the boat
+        if (boat.getPassengers().isEmpty()) {
+            return;
+        }
+        
+        if (!(boat.getPassengers().get(0) instanceof Player)) {
+            return;
+        }
+        
+        Player player = (Player) boat.getPassengers().get(0);
+        
+        // Check if player is in a multiplayer race
+        if (!plugin.getMultiplayerRaceManager().isPlayerInRace(player.getUniqueId())) {
+            return;
+        }
+        
+        // Check config for boat protection
+        if (plugin.getConfig().getBoolean("multiplayer.player-protection.protect-boats", true)) {
+            event.setCancelled(true);
+            plugin.multiplayerDebugLog("Prevented boat damage for " + player.getName() + " during race");
+            
+            // Notify attacker if it's a player
+            if (event.getAttacker() instanceof Player) {
+                Player attacker = (Player) event.getAttacker();
+                attacker.sendMessage("§c❌ Cannot damage boats during races!");
+            }
+        }
+    }
+    
+    /**
+     * Prevent boat destruction during multiplayer races
+     */
+    @EventHandler
+    public void onBoatDestroy(VehicleDestroyEvent event) {
+        if (!(event.getVehicle() instanceof Boat)) {
+            return;
+        }
+        
+        Boat boat = (Boat) event.getVehicle();
+        
+        // Check if it's a race boat
+        if (!plugin.getBoatManager().isRaceBoat(boat)) {
+            return;
+        }
+        
+        // Get the player in the boat
+        if (boat.getPassengers().isEmpty()) {
+            return;
+        }
+        
+        if (!(boat.getPassengers().get(0) instanceof Player)) {
+            return;
+        }
+        
+        Player player = (Player) boat.getPassengers().get(0);
+        
+        // Check if player is in a multiplayer race
+        if (!plugin.getMultiplayerRaceManager().isPlayerInRace(player.getUniqueId())) {
+            return;
+        }
+        
+        // Check config for boat protection
+        if (plugin.getConfig().getBoolean("multiplayer.player-protection.protect-boats", true)) {
+            event.setCancelled(true);
+            plugin.multiplayerDebugLog("Prevented boat destruction for " + player.getName() + " during race");
+            
+            // Notify attacker if it's a player
+            if (event.getAttacker() instanceof Player) {
+                Player attacker = (Player) event.getAttacker();
+                attacker.sendMessage("§c❌ Cannot destroy boats during races!");
+            }
         }
     }
 }

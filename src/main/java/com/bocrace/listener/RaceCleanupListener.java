@@ -3,6 +3,7 @@ package com.bocrace.listener;
 import com.bocrace.BOCRacePlugin;
 import com.bocrace.model.Course;
 import com.bocrace.race.ActiveRace;
+import com.bocrace.race.MultiplayerRace;
 import com.bocrace.util.BoatManager;
 import com.bocrace.util.TeleportUtil;
 import org.bukkit.Location;
@@ -117,11 +118,23 @@ public class RaceCleanupListener implements Listener {
         
         UUID playerUuid = player.getUniqueId();
         
-        // Check if player has an active race
+        // Check if player has an active singleplayer race
         ActiveRace race = plugin.getRaceManager().getActiveRace(playerUuid);
-        if (race == null) return;
+        if (race != null) {
+            handleSingleplayerBoatExit(player, race, boat);
+            return;
+        }
         
-        plugin.debugLog("Player exited race boat - Player: " + player.getName() + 
+        // Check if player has an active multiplayer race
+        if (plugin.getMultiplayerRaceManager().isPlayerInRace(playerUuid)) {
+            handleMultiplayerBoatExit(player, boat);
+            return;
+        }
+    }
+    
+    private void handleSingleplayerBoatExit(Player player, ActiveRace race, Boat boat) {
+        UUID playerUuid = player.getUniqueId();
+        plugin.debugLog("Player exited singleplayer race boat - Player: " + player.getName() + 
                        ", Course: " + race.getCourseName() + 
                        ", State: " + race.getState() + 
                        ", Duration: " + race.getCurrentDurationMs() + "ms");
@@ -180,5 +193,42 @@ public class RaceCleanupListener implements Listener {
         }
         
         plugin.debugLog("Race cleanup completed for boat exit: " + player.getName());
+    }
+    
+    private void handleMultiplayerBoatExit(Player player, Boat boat) {
+        plugin.multiplayerDebugLog("Player exited multiplayer race boat - Player: " + player.getName());
+        
+        // Get the race
+        MultiplayerRace race = plugin.getMultiplayerRaceManager().getRaceByPlayer(player.getUniqueId());
+        if (race == null) {
+            return;
+        }
+        
+        // Remove the boat
+        boatManager.removeRaceBoat(boat, "player_exited");
+        
+        // Check if this is the leader and if anyone has crossed start line yet
+        if (race.getLeaderId().equals(player.getUniqueId())) {
+            // Leader exited boat - check if race should be cancelled
+            boolean anyoneStarted = false;
+            for (MultiplayerRace.PlayerResult result : race.getPlayers().values()) {
+                if (result.isTimerStarted()) {
+                    anyoneStarted = true;
+                    break;
+                }
+            }
+            
+            if (!anyoneStarted) {
+                // No one crossed start line yet - cancel entire race
+                plugin.getMultiplayerRaceManager().cancelRace(race.getCourse(), player);
+                plugin.multiplayerDebugLog("Race cancelled - leader exited boat before anyone started");
+                return;
+            }
+        }
+        
+        // Normal DQ (someone already started or not leader)
+        plugin.getMultiplayerRaceManager().disqualifyPlayer(player.getUniqueId(), "You exited your boat during the race");
+        
+        plugin.multiplayerDebugLog("Multiplayer race cleanup completed for boat exit: " + player.getName());
     }
 }

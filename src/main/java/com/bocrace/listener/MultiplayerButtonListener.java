@@ -70,8 +70,10 @@ public class MultiplayerButtonListener implements Listener {
             return;
         }
         
-        // Cancel the event to prevent other interactions
-        event.setCancelled(true);
+        // DON'T cancel the event for start button - let natural redstone work
+        if (buttonType != ButtonType.START_RACE) {
+            event.setCancelled(true);
+        }
         
         // Handle button press based on type
         switch (buttonType) {
@@ -217,9 +219,7 @@ public class MultiplayerButtonListener implements Listener {
             return;
         }
         
-        // TRIGGER REDSTONE FIRST (before starting race logic)
-        triggerRedstone(clickedBlock);
-        
+        // Natural button press will trigger redstone (event not cancelled)
         // Start the race
         boolean started = raceManager.startRace(course, player);
         if (!started) {
@@ -306,21 +306,43 @@ public class MultiplayerButtonListener implements Listener {
      * Trigger redstone signal at the button location
      */
     private void triggerRedstone(Block buttonBlock) {
-        // Set block to powered state briefly
-        Material originalMaterial = buttonBlock.getType();
+        plugin.multiplayerDebugLog("Triggering redstone at " + buttonBlock.getLocation());
         
-        // Power the block for redstone signal
-        buttonBlock.setType(Material.REDSTONE_BLOCK);
+        // SIMPLE METHOD: Just place a redstone block next to the button temporarily
+        // This will power any adjacent redstone circuits
+        Block[] adjacentBlocks = {
+            buttonBlock.getRelative(org.bukkit.block.BlockFace.DOWN),
+            buttonBlock.getRelative(org.bukkit.block.BlockFace.NORTH),
+            buttonBlock.getRelative(org.bukkit.block.BlockFace.SOUTH),
+            buttonBlock.getRelative(org.bukkit.block.BlockFace.EAST),
+            buttonBlock.getRelative(org.bukkit.block.BlockFace.WEST)
+        };
         
-        // Schedule to revert back after 1 tick (immediate power pulse)
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            if (buttonBlock.getType() == Material.REDSTONE_BLOCK) {
-                buttonBlock.setType(originalMaterial);
+        // Find the first air or replaceable block to place redstone
+        for (Block adjacentBlock : adjacentBlocks) {
+            if (adjacentBlock.getType() == Material.AIR || 
+                adjacentBlock.getType() == Material.REDSTONE_WIRE ||
+                adjacentBlock.getType().name().contains("REDSTONE")) {
+                
+                Material originalMaterial = adjacentBlock.getType();
+                
+                // Place redstone block for power
+                adjacentBlock.setType(Material.REDSTONE_BLOCK);
+                plugin.multiplayerDebugLog("Placed redstone block at " + adjacentBlock.getLocation() + " (was " + originalMaterial + ")");
+                
+                // Remove after 10 ticks (0.5 seconds) for reliable pulse
+                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                    if (adjacentBlock.getType() == Material.REDSTONE_BLOCK) {
+                        adjacentBlock.setType(originalMaterial);
+                        plugin.multiplayerDebugLog("Removed redstone block, restored " + originalMaterial);
+                    }
+                }, 10L);
+                
+                return; // Found a spot, done
             }
-        }, 1L);
+        }
         
-        plugin.debugLog("Triggered redstone at " + buttonBlock.getLocation() + 
-                       " (was " + originalMaterial + ")");
+        plugin.multiplayerDebugLog("No suitable location found for redstone trigger near button");
     }
     
     /**

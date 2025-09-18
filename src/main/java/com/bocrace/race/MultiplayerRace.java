@@ -32,12 +32,14 @@ public class MultiplayerRace {
         private int placement;
         private boolean disqualified;
         private String disqualifyReason;
+        private boolean timerStarted; // Flag for when timer actually starts (crossing start line)
         
         public PlayerResult(UUID playerId, String playerName, long startTimeMs) {
             this.playerId = playerId;
             this.playerName = playerName;
             this.startTimeMs = startTimeMs;
             this.disqualified = false;
+            this.timerStarted = false; // Timer starts when crossing start line
         }
         
         public void finish(long finishTimeMs) {
@@ -61,6 +63,8 @@ public class MultiplayerRace {
         public boolean isDisqualified() { return disqualified; }
         public String getDisqualifyReason() { return disqualifyReason; }
         public boolean isFinished() { return finishTimeMs != null; }
+        public boolean isTimerStarted() { return timerStarted; }
+        public void startTimer() { this.timerStarted = true; }
     }
     
     private final String raceId;

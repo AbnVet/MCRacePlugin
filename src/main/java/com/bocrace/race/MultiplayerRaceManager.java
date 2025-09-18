@@ -222,6 +222,9 @@ public class MultiplayerRaceManager {
         // Finish the player
         race.finishPlayer(playerId);
         
+        // IMPORTANT: Remove player from tracking FIRST to prevent DQ on boat exit
+        playerRaces.remove(playerId);
+        
         // Get placement
         MultiplayerRace.PlayerResult result = race.getPlayers().get(playerId);
         if (result != null) {
@@ -232,7 +235,7 @@ public class MultiplayerRaceManager {
             // Play finish effects
             plugin.getSoundEffectManager().playRaceFinishEffects(player, player.getLocation(), race.getCourse());
             
-            // Remove player's boat
+            // Remove player's boat (safe now - player not tracked for DQ)
             Boat boat = plugin.getBoatManager().findRaceBoatByPlayer(player.getUniqueId());
             if (boat != null) {
                 plugin.getBoatManager().removeRaceBoat(boat, "race_finished");
@@ -320,9 +323,25 @@ public class MultiplayerRaceManager {
                 // Cancel race if still in lobby
                 race.cancelRace();
                 cleanupRace(race, "Race leader disconnected");
-            } else {
-                // DQ leader if race is running
-                disqualifyPlayer(playerId, "Leader disconnected");
+            } else if (race.getState() == MultiplayerRace.State.RUNNING) {
+                // Check if anyone has started their timer yet
+                boolean anyoneStarted = false;
+                for (MultiplayerRace.PlayerResult result : race.getPlayers().values()) {
+                    if (result.isTimerStarted()) {
+                        anyoneStarted = true;
+                        break;
+                    }
+                }
+                
+                if (!anyoneStarted) {
+                    // No one crossed start line yet - cancel race
+                    race.cancelRace();
+                    cleanupRace(race, "Race leader disconnected before anyone started");
+                    plugin.multiplayerDebugLog("Cancelled race - leader disconnected before anyone crossed start line");
+                } else {
+                    // Someone already started - just DQ leader
+                    disqualifyPlayer(playerId, "Leader disconnected");
+                }
             }
         } else {
             // Regular player disconnected

@@ -310,16 +310,24 @@ public class RaceLineListener implements Listener {
      * Handle multiplayer start line detection
      */
     private void handleMultiplayerStartLineDetection(Boat boat, MultiplayerRace race, Course course, Player player, Location from, Location to) {
-        // Check if player has already started timing
+        // Check if player is in race
         MultiplayerRace.PlayerResult result = race.getPlayers().get(player.getUniqueId());
-        if (result == null || result.getStartTimeMs() == 0) {
-            return; // Player not in race or timing not started
+        if (result == null || result.isDisqualified()) {
+            return; // Player not in race or already DQ'd
+        }
+        
+        // Check if timer already started
+        if (result.isTimerStarted()) {
+            return; // Timer already started for this player
         }
         
         // Check if player crossed start line
         boolean crossedStart = LineDetection.crossedStartLine(from, to, course.getSpstart1(), course.getSpstart2());
         if (crossedStart) {
-            plugin.raceDebugLog("🏁 Multiplayer start line crossed by " + player.getName());
+            plugin.raceDebugLog("🏁 Multiplayer start line crossed by " + player.getName() + " - STARTING TIMER");
+            
+            // Start the timer for this player
+            result.startTimer();
             
             // Play start effects
             soundEffectManager.playRaceStartEffects(player, to, course);
@@ -351,6 +359,12 @@ public class RaceLineListener implements Listener {
      * Update multiplayer race timer display
      */
     private void updateMultiplayerRaceTimer(Boat boat, MultiplayerRace race, Player player) {
+        // Check if player's timer has started
+        MultiplayerRace.PlayerResult result = race.getPlayers().get(player.getUniqueId());
+        if (result == null || !result.isTimerStarted()) {
+            return; // Don't show timer until player crosses start line
+        }
+        
         // Get player's current race time
         long raceTimeMs = System.currentTimeMillis() - race.getRaceStartTimeMs();
         

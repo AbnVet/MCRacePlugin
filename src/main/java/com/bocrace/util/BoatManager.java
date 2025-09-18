@@ -39,10 +39,12 @@ public class BoatManager {
         boatSpawn.setX(spawnLocation.getBlockX() + 0.5); // Center X
         boatSpawn.setZ(spawnLocation.getBlockZ() + 0.5); // Center Z
         boatSpawn.add(0, 1.0, 0); // Add Y offset
+        // Keep original yaw/pitch from setup (FIXED - was missing for multiplayer)
         
         plugin.debugLog("Spawning multiplayer race boat for " + player.getName() + " at " + 
                        boatSpawn.getWorld().getName() + " " + 
-                       boatSpawn.getBlockX() + "," + boatSpawn.getBlockY() + "," + boatSpawn.getBlockZ());
+                       boatSpawn.getBlockX() + "," + boatSpawn.getBlockY() + "," + boatSpawn.getBlockZ() +
+                       " facing yaw: " + boatSpawn.getYaw());
         
         // Spawn the boat
         Boat boat = (Boat) boatSpawn.getWorld().spawnEntity(boatSpawn, EntityType.OAK_BOAT);

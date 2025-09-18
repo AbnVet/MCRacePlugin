@@ -17,10 +17,12 @@ com\bocrace\listener\StartButtonListener.class
 com\bocrace\race\MultiplayerRace$PlayerResult.class
 com\bocrace\race\ActiveRace$State.class
 com\bocrace\race\MultiplayerRaceManager$2.class
+com\bocrace\race\MultiplayerRaceManager$3.class
 com\bocrace\util\SoundEffectManager.class
 com\bocrace\listener\SetupListener.class
 com\bocrace\race\RaceManager.class
 com\bocrace\race\MultiplayerRace.class
+com\bocrace\listener\RaceProtectionListener.class
 com\bocrace\listener\MultiplayerButtonListener.class
 com\bocrace\race\MultiplayerRaceManager$1.class
 com\bocrace\command\BOCRaceCommand.class
