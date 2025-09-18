@@ -137,6 +137,45 @@ public class BOCRacePlaceholderExpansion extends PlaceholderExpansion {
             return handleMultiplayerPlaceholders(playerUuid, params);
         }
         
+        // Course status placeholders: course_<name>_status (also handle in player context)
+        if (params.startsWith("course_") && params.endsWith("_status")) {
+            String courseName = extractCourseName(params, "course_", "_status");
+            return getCourseStatus(courseName);
+        }
+        
+        // Course record placeholders: course_<name>_record (also handle in player context)
+        if (params.startsWith("course_") && params.endsWith("_record")) {
+            String courseName = extractCourseName(params, "course_", "_record");
+            return getCourseRecord(courseName);
+        }
+        
+        // Course record time placeholders: course_<name>_record_time (also handle in player context)
+        if (params.startsWith("course_") && params.endsWith("_record_time")) {
+            String courseName = extractCourseName(params, "course_", "_record_time");
+            return getCourseRecordTime(courseName);
+        }
+        
+        // Course usage placeholders: course_<name>_usage (also handle in player context)
+        if (params.startsWith("course_") && params.endsWith("_usage")) {
+            String courseName = extractCourseName(params, "course_", "_usage");
+            return getCourseUsage(courseName);
+        }
+        
+        // Leaderboard placeholders: leaderboard_<course>_<position> (also handle in player context)
+        if (params.startsWith("leaderboard_")) {
+            return handleLeaderboardPlaceholder(params);
+        }
+        
+        // Global statistics (also handle in player context)
+        switch (params.toLowerCase()) {
+            case "total_courses":
+                return String.valueOf(plugin.getStorageManager().getAllCourses().size());
+            case "active_races":
+                return String.valueOf(plugin.getRaceManager().getAllActiveRaces().size());
+            case "active_mp_races":
+                return String.valueOf(plugin.getMultiplayerRaceManager().getActiveRaceCount());
+        }
+        
         return null; // Placeholder not found
     }
     
