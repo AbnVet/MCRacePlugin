@@ -166,6 +166,24 @@ public class BOCRacePlaceholderExpansion extends PlaceholderExpansion {
             return handleLeaderboardPlaceholder(params);
         }
         
+        // DQ-related placeholders
+        switch (params.toLowerCase()) {
+            case "player_last_race_status":
+                return getPlayerLastRaceStatus(playerUuid);
+            case "player_dq_count":
+                return getPlayerDQCount(playerUuid);
+            case "player_completion_rate":
+                return getPlayerCompletionRate(playerUuid);
+            case "player_last_dq_reason":
+                return getPlayerLastDQReason(playerUuid);
+        }
+        
+        // Course DQ rate placeholders: course_<name>_dq_rate
+        if (params.startsWith("course_") && params.endsWith("_dq_rate")) {
+            String courseName = extractCourseName(params, "course_", "_dq_rate");
+            return getCourseDQRate(courseName);
+        }
+        
         // Global statistics (also handle in player context)
         switch (params.toLowerCase()) {
             case "total_courses":
@@ -378,6 +396,140 @@ public class BOCRacePlaceholderExpansion extends PlaceholderExpansion {
             }
         }
         return null;
+    }
+    
+    // DQ-related helper methods
+    private String getPlayerLastRaceStatus(UUID playerUuid) {
+        try {
+            // Get player name from UUID
+            org.bukkit.entity.Player player = org.bukkit.Bukkit.getPlayer(playerUuid);
+            if (player == null) return "Unknown";
+            
+            // Get player's recent races (most recent first)
+            List<RaceRecord> recentRaces = plugin.getRecordManager().getPlayerRecent(player.getName(), 1);
+            if (recentRaces.isEmpty()) {
+                return "No Races";
+            }
+            
+            RaceRecord lastRace = recentRaces.get(0);
+            
+            // Check if it was a DQ (negative time or "(DQ)" in player name)
+            if (lastRace.getTime() < 0 || lastRace.getPlayer().contains("(DQ)")) {
+                // Extract DQ reason from player name if available
+                String playerName = lastRace.getPlayer();
+                if (playerName.contains("(DQ)")) {
+                    // Try to extract reason - format might be "PlayerName (DQ)" or have reason
+                    return "DQ - " + getDQReasonFromTime(Math.abs(lastRace.getTime()));
+                } else {
+                    return "DQ - Unknown reason";
+                }
+            } else {
+                return "Completed - " + formatTime((long)(lastRace.getTime() * 1000));
+            }
+        } catch (Exception e) {
+            return "Error";
+        }
+    }
+    
+    private String getPlayerDQCount(UUID playerUuid) {
+        try {
+            org.bukkit.entity.Player player = org.bukkit.Bukkit.getPlayer(playerUuid);
+            if (player == null) return "0";
+            
+            // Get all player races and count DQs
+            List<RaceRecord> allRaces = plugin.getRecordManager().getPlayerRecent(player.getName(), Integer.MAX_VALUE);
+            int dqCount = 0;
+            
+            for (RaceRecord race : allRaces) {
+                if (race.getTime() < 0 || race.getPlayer().contains("(DQ)")) {
+                    dqCount++;
+                }
+            }
+            
+            return String.valueOf(dqCount);
+        } catch (Exception e) {
+            return "0";
+        }
+    }
+    
+    private String getPlayerCompletionRate(UUID playerUuid) {
+        try {
+            org.bukkit.entity.Player player = org.bukkit.Bukkit.getPlayer(playerUuid);
+            if (player == null) return "0%";
+            
+            // Get all player races
+            List<RaceRecord> allRaces = plugin.getRecordManager().getPlayerRecent(player.getName(), Integer.MAX_VALUE);
+            if (allRaces.isEmpty()) return "0%";
+            
+            int totalRaces = allRaces.size();
+            int completedRaces = 0;
+            
+            for (RaceRecord race : allRaces) {
+                if (race.getTime() >= 0 && !race.getPlayer().contains("(DQ)")) {
+                    completedRaces++;
+                }
+            }
+            
+            int completionRate = (int) Math.round((double) completedRaces / totalRaces * 100);
+            return completionRate + "%";
+        } catch (Exception e) {
+            return "0%";
+        }
+    }
+    
+    private String getPlayerLastDQReason(UUID playerUuid) {
+        try {
+            org.bukkit.entity.Player player = org.bukkit.Bukkit.getPlayer(playerUuid);
+            if (player == null) return "N/A";
+            
+            // Get recent races and find the most recent DQ
+            List<RaceRecord> recentRaces = plugin.getRecordManager().getPlayerRecent(player.getName(), 10);
+            
+            for (RaceRecord race : recentRaces) {
+                if (race.getTime() < 0 || race.getPlayer().contains("(DQ)")) {
+                    // Try to extract reason from the data
+                    return getDQReasonFromTime(Math.abs(race.getTime()));
+                }
+            }
+            
+            return "No Recent DQs";
+        } catch (Exception e) {
+            return "Error";
+        }
+    }
+    
+    private String getCourseDQRate(String courseName) {
+        try {
+            // Get all records for this course
+            List<RaceRecord> courseRecords = plugin.getRecordManager().getTopTimes(courseName, Integer.MAX_VALUE);
+            if (courseRecords.isEmpty()) return "0%";
+            
+            int totalRaces = courseRecords.size();
+            int dqRaces = 0;
+            
+            for (RaceRecord race : courseRecords) {
+                if (race.getTime() < 0 || race.getPlayer().contains("(DQ)")) {
+                    dqRaces++;
+                }
+            }
+            
+            int dqRate = (int) Math.round((double) dqRaces / totalRaces * 100);
+            return dqRate + "%";
+        } catch (Exception e) {
+            return "0%";
+        }
+    }
+    
+    private String getDQReasonFromTime(double timeSeconds) {
+        // This is a basic implementation - in the future we could store DQ reasons more explicitly
+        // For now, we'll make educated guesses based on common DQ times
+        if (timeSeconds < 5.0) {
+            return "Early exit";
+        } else if (timeSeconds > 50.0) {
+            return "Timeout/Disconnect";
+        } else {
+            return "Exited boat";
+        }
     }
     
     // Helper methods for multiplayer race leaders
