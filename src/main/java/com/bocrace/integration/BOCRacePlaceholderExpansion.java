@@ -376,7 +376,77 @@ public class BOCRacePlaceholderExpansion extends PlaceholderExpansion {
     
     // Leaderboard handling
     private String handleLeaderboardPlaceholder(String params) {
-        // Format: leaderboard_<course>_<position>
+        if (plugin.getConfigManager().isDebugEnabled()) {
+            plugin.getLogger().info("[DEBUG] Leaderboard placeholder requested: " + params);
+        }
+        
+        // Check for new format: leaderboard_<course>_name_<position> or leaderboard_<course>_time_<position>
+        if (params.contains("_name_") || params.contains("_time_")) {
+            return handleNewLeaderboardFormat(params);
+        }
+        
+        // Original format: leaderboard_<course>_<position> (backward compatibility)
+        return handleOriginalLeaderboardFormat(params);
+    }
+    
+    private String handleNewLeaderboardFormat(String params) {
+        // Format: leaderboard_<course>_name_<position> or leaderboard_<course>_time_<position>
+        String[] parts = params.split("_");
+        if (parts.length >= 4) {
+            String position = parts[parts.length - 1];
+            String type = parts[parts.length - 2]; // "name" or "time"
+            String courseName = String.join("_", java.util.Arrays.copyOfRange(parts, 1, parts.length - 2));
+            
+            try {
+                int pos = Integer.parseInt(position);
+                List<RaceRecord> leaderboard = plugin.getRecordManager().getTopTimes(courseName, 10);
+                
+                if (plugin.getConfigManager().isDebugEnabled()) {
+                    plugin.getLogger().info("[DEBUG] Parsed leaderboard request - Course: " + courseName + ", Type: " + type + ", Position: " + pos);
+                }
+                
+                if (pos > 0 && pos <= leaderboard.size()) {
+                    RaceRecord record = leaderboard.get(pos - 1);
+                    
+                    if ("name".equals(type)) {
+                        if (plugin.getConfigManager().isDebugEnabled()) {
+                            plugin.getLogger().info("[DEBUG] Returning player name: " + record.getPlayer());
+                        }
+                        return record.getPlayer();
+                    } else if ("time".equals(type)) {
+                        String formattedTime = formatTime((long)(record.getTime() * 1000));
+                        if (plugin.getConfigManager().isDebugEnabled()) {
+                            plugin.getLogger().info("[DEBUG] Returning formatted time: " + formattedTime);
+                        }
+                        return formattedTime;
+                    }
+                }
+                
+                if (plugin.getConfigManager().isDebugEnabled()) {
+                    plugin.getLogger().info("[DEBUG] No entry found for position " + pos);
+                }
+                return "No Entry";
+            } catch (NumberFormatException e) {
+                if (plugin.getConfigManager().isDebugEnabled()) {
+                    plugin.getLogger().warning("[DEBUG] Invalid position in leaderboard placeholder: " + position);
+                }
+                return "Invalid Position";
+            } catch (Exception e) {
+                if (plugin.getConfigManager().isDebugEnabled()) {
+                    plugin.getLogger().warning("[DEBUG] Error processing leaderboard placeholder: " + e.getMessage());
+                }
+                return "Error";
+            }
+        }
+        
+        if (plugin.getConfigManager().isDebugEnabled()) {
+            plugin.getLogger().warning("[DEBUG] Invalid leaderboard placeholder format: " + params);
+        }
+        return "Invalid Format";
+    }
+    
+    private String handleOriginalLeaderboardFormat(String params) {
+        // Format: leaderboard_<course>_<position> (backward compatibility)
         String[] parts = params.split("_");
         if (parts.length >= 3) {
             String position = parts[parts.length - 1];
@@ -386,16 +456,40 @@ public class BOCRacePlaceholderExpansion extends PlaceholderExpansion {
                 int pos = Integer.parseInt(position);
                 List<RaceRecord> leaderboard = plugin.getRecordManager().getTopTimes(courseName, 10);
                 
+                if (plugin.getConfigManager().isDebugEnabled()) {
+                    plugin.getLogger().info("[DEBUG] Original format leaderboard request - Course: " + courseName + ", Position: " + pos);
+                }
+                
                 if (pos > 0 && pos <= leaderboard.size()) {
                     RaceRecord record = leaderboard.get(pos - 1);
-                    return record.getPlayer() + " - " + formatTime((long)(record.getTime() * 1000));
+                    String result = record.getPlayer() + " - " + formatTime((long)(record.getTime() * 1000));
+                    if (plugin.getConfigManager().isDebugEnabled()) {
+                        plugin.getLogger().info("[DEBUG] Returning combined result: " + result);
+                    }
+                    return result;
+                }
+                
+                if (plugin.getConfigManager().isDebugEnabled()) {
+                    plugin.getLogger().info("[DEBUG] No entry found for position " + pos);
                 }
                 return "No Entry";
             } catch (NumberFormatException e) {
+                if (plugin.getConfigManager().isDebugEnabled()) {
+                    plugin.getLogger().warning("[DEBUG] Invalid position in original leaderboard placeholder: " + position);
+                }
                 return "Invalid Position";
+            } catch (Exception e) {
+                if (plugin.getConfigManager().isDebugEnabled()) {
+                    plugin.getLogger().warning("[DEBUG] Error processing original leaderboard placeholder: " + e.getMessage());
+                }
+                return "Error";
             }
         }
-        return null;
+        
+        if (plugin.getConfigManager().isDebugEnabled()) {
+            plugin.getLogger().warning("[DEBUG] Invalid original leaderboard placeholder format: " + params);
+        }
+        return "Invalid Format";
     }
     
     // DQ-related helper methods
