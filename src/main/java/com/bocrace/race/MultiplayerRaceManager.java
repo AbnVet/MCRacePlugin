@@ -345,10 +345,16 @@ public class MultiplayerRaceManager {
                 plugin.getBoatManager().removeRaceBoat(boat, "disqualified");
             }
             
-            // Teleport back to race lobby
+            // Teleport back to race lobby (with proper positioning)
             Location lobbySpawn = race.getCourse().getMpraceLobbySpawn();
             if (lobbySpawn != null) {
-                player.teleport(lobbySpawn);
+                // Fix positioning - ensure they spawn on top of block, not inside
+                Location safeLocation = lobbySpawn.clone();
+                safeLocation.setX(safeLocation.getBlockX() + 0.5);
+                safeLocation.setZ(safeLocation.getBlockZ() + 0.5);
+                safeLocation.setY(safeLocation.getBlockY() + 1.0); // 1 block above surface
+                
+                player.teleport(safeLocation);
             }
         }
         
@@ -359,6 +365,49 @@ public class MultiplayerRaceManager {
         
         plugin.debugLog("Disqualified player " + (player != null ? player.getName() : playerId) + 
                        " from race " + race.getRaceId() + ": " + reason);
+    }
+    
+    /**
+     * Remove player from race without DQ (for pre-race exits)
+     */
+    public void removePlayerFromRace(UUID playerId, String reason) {
+        MultiplayerRace race = playerRaces.get(playerId);
+        if (race == null) {
+            return;
+        }
+        
+        Player player = Bukkit.getPlayer(playerId);
+        
+        // Remove player from race (no DQ, no record saved)
+        race.removePlayer(playerId);
+        
+        // Remove from tracking
+        playerRaces.remove(playerId);
+        
+        // Cleanup player boat and teleport back to lobby
+        if (player != null) {
+            Boat boat = plugin.getBoatManager().findRaceBoatByPlayer(playerId);
+            if (boat != null) {
+                plugin.getBoatManager().removeRaceBoat(boat, "left_race");
+            }
+            
+            // Always teleport back to race lobby (with proper positioning)
+            Location lobbySpawn = race.getCourse().getMpraceLobbySpawn();
+            if (lobbySpawn != null) {
+                // Fix positioning - ensure they spawn on top of block, not inside
+                Location safeLocation = lobbySpawn.clone();
+                safeLocation.setX(safeLocation.getBlockX() + 0.5);
+                safeLocation.setZ(safeLocation.getBlockZ() + 0.5);
+                safeLocation.setY(safeLocation.getBlockY() + 1.0); // 1 block above surface
+                
+                player.teleport(safeLocation);
+                plugin.multiplayerDebugLog("Teleported " + player.getName() + " back to race lobby");
+            }
+        }
+        
+        plugin.multiplayerDebugLog("Removed player from race (no DQ): " + 
+                                  (player != null ? player.getName() : playerId) + 
+                                  " - " + reason);
     }
     
     /**
@@ -397,8 +446,14 @@ public class MultiplayerRaceManager {
                 }
             }
         } else {
-            // Regular player disconnected
-            disqualifyPlayer(playerId, "Player disconnected");
+            // Regular player disconnected - check race state
+            if (race.getState() == MultiplayerRace.State.RUNNING) {
+                // Race is active - true disqualification
+                disqualifyPlayer(playerId, "Player disconnected");
+            } else {
+                // Race hasn't started - just left lobby (not a DQ)
+                removePlayerFromRace(playerId, "Disconnected before race started");
+            }
         }
     }
     
@@ -468,10 +523,16 @@ public class MultiplayerRaceManager {
                     plugin.getBoatManager().removeRaceBoat(boat, "race_cleanup");
                 }
                 
-                // Teleport back to race lobby
+                // Teleport back to race lobby (with proper positioning)
                 Location lobbySpawn = race.getCourse().getMpraceLobbySpawn();
                 if (lobbySpawn != null) {
-                    player.teleport(lobbySpawn);
+                    // Fix positioning - ensure they spawn on top of block, not inside
+                    Location safeLocation = lobbySpawn.clone();
+                    safeLocation.setX(safeLocation.getBlockX() + 0.5);
+                    safeLocation.setZ(safeLocation.getBlockZ() + 0.5);
+                    safeLocation.setY(safeLocation.getBlockY() + 1.0); // 1 block above surface
+                    
+                    player.teleport(safeLocation);
                 }
             }
         }

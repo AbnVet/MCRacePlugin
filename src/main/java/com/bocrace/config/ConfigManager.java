@@ -109,7 +109,7 @@ public class ConfigManager {
             config.set("multiplayer.player-protection.protect-boats", true); // Prevent boat damage/destruction
             
             // Race effects
-            config.set("multiplayer.effects.night-vision.enabled", true);
+            config.set("multiplayer.effects.night-vision.enabled", false); // Disabled by default
             config.set("multiplayer.effects.night-vision.duration", 600); // 10 minutes in seconds
             
             configUpdated = true;

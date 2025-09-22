@@ -15,6 +15,24 @@ multiplayer:
     race-finished: "&6Race completed on &a{course}&6! Results posted."
     # Announcement when race times out
     race-timeout: "&cRace on &6{course} &chas timed out! Unfinished players disqualified."
+  
+  # Player protection during races
+  player-protection:
+    enabled: true
+    prevent-mob-damage: true
+    prevent-pvp: true
+    prevent-explosion-damage: true
+    prevent-drowning: true
+    prevent-fall-damage: false     # Allow for course obstacles
+    prevent-item-drops: true
+    death-disqualifies: true
+    protect-boats: true
+  
+  # Race effects
+  effects:
+    night-vision:
+      enabled: false             # Disabled by default
+      duration: 600              # 10 minutes in seconds
 
 # Sound and particle settings
 sounds:

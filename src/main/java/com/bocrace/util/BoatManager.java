@@ -4,7 +4,6 @@ import com.bocrace.BOCRacePlugin;
 import com.bocrace.model.Course;
 import com.bocrace.race.ActiveRace;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.entity.Boat;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
@@ -82,10 +81,11 @@ public class BoatManager {
                        boatSpawn.getWorld().getName() + " " + 
                        boatSpawn.getBlockX() + "," + boatSpawn.getBlockY() + "," + boatSpawn.getBlockZ());
         
-        // Spawn the boat
-        Boat boat = (Boat) boatSpawn.getWorld().spawnEntity(boatSpawn, EntityType.OAK_BOAT);
+        // Spawn the boat with course-specific type
+        EntityType boatType = parseBoatType(course.getBoatType());
+        Boat boat = (Boat) boatSpawn.getWorld().spawnEntity(boatSpawn, boatType);
         
-        // Note: Boat material is set by EntityType in newer versions
+        plugin.debugLog("Spawned " + boatType.name() + " for course " + course.getName());
         
         // Tag the boat with PDC data
         boat.getPersistentDataContainer().set(pdcKeys.raceBoat, PersistentDataType.BOOLEAN, true);
@@ -213,5 +213,59 @@ public class BoatManager {
         
         plugin.debugLog("Cleaned up " + count + " race boats");
         return count;
+    }
+    
+    /**
+     * Parse boat type string to EntityType with fallback to OAK_BOAT
+     */
+    private EntityType parseBoatType(String boatTypeName) {
+        if (boatTypeName == null || boatTypeName.trim().isEmpty()) {
+            return EntityType.OAK_BOAT; // Default
+        }
+        
+        try {
+            // Try to parse the boat type
+            String normalizedName = boatTypeName.toUpperCase().trim();
+            
+            // Add _BOAT suffix if not present
+            if (!normalizedName.endsWith("_BOAT") && !normalizedName.endsWith("_RAFT")) {
+                normalizedName = normalizedName + "_BOAT";
+            }
+            
+            // Parse the EntityType
+            EntityType boatType = EntityType.valueOf(normalizedName);
+            
+            // Verify it's actually a boat type
+            if (isValidBoatType(boatType)) {
+                return boatType;
+            } else {
+                plugin.getLogger().warning("Invalid boat type: " + boatTypeName + " - using OAK_BOAT");
+                return EntityType.OAK_BOAT;
+            }
+        } catch (IllegalArgumentException e) {
+            plugin.getLogger().warning("Unknown boat type: " + boatTypeName + " - using OAK_BOAT");
+            return EntityType.OAK_BOAT;
+        }
+    }
+    
+    /**
+     * Check if an EntityType is a valid boat type
+     */
+    private boolean isValidBoatType(EntityType type) {
+        switch (type) {
+            case OAK_BOAT:
+            case BIRCH_BOAT:
+            case SPRUCE_BOAT:
+            case JUNGLE_BOAT:
+            case ACACIA_BOAT:
+            case DARK_OAK_BOAT:
+            case MANGROVE_BOAT:
+            case CHERRY_BOAT:
+            case BAMBOO_RAFT:
+            case PALE_OAK_BOAT:
+                return true;
+            default:
+                return false;
+        }
     }
 }

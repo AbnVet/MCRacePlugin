@@ -253,7 +253,7 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
             
             if (firstArg.equals("singleplayer") && secondArg.equals("setup")) {
                 List<String> setupActions = Arrays.asList(
-                    "setmainlobbybutton", "setcourselobbybutton", "setboatspawn", "setstartlinepoints", "setfinishlinepoints", 
+                    "setmainlobbybutton", "setcourselobbybutton", "setboatspawn", "setboattype", "setstartlinepoints", "setfinishlinepoints", 
                     "setreturnmainbutton", "setcourselobbyspawn", "setmainlobbyspawn"
                 );
                 for (String action : setupActions) {
@@ -285,6 +285,14 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
                     for (String point : pointNumbers) {
                         if (point.startsWith(args[4].toLowerCase())) {
                             completions.add(point);
+                        }
+                    }
+                } else if (fourthArg.equals("setboattype")) {
+                    // Boat type options
+                    List<String> boatTypes = Arrays.asList("oak", "birch", "spruce", "jungle", "acacia", "dark_oak", "mangrove", "cherry", "bamboo", "pale_oak");
+                    for (String boatType : boatTypes) {
+                        if (boatType.startsWith(args[4].toLowerCase())) {
+                            completions.add(boatType);
                         }
                     }
                 } else if (firstArg.equals("multiplayer") && fourthArg.equals("setmpboatspawn")) {
@@ -440,6 +448,7 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         }
         
         sender.sendMessage("§7- Boat Spawn: " + (course.getSpboatspawn() != null ? "§aSET" : "§cNOT SET"));
+        sender.sendMessage("§7- Boat Type: " + (course.getBoatType() != null ? "§e" + course.getBoatType().toLowerCase() : "§7oak (default)"));
         sender.sendMessage("§7- Start Line Point 1: " + (course.getSpstart1() != null ? "§aSET" : "§cNOT SET"));
         sender.sendMessage("§7- Start Line Point 2: " + (course.getSpstart2() != null ? "§aSET" : "§cNOT SET"));
         sender.sendMessage("§7- Finish Line Point 1: " + (course.getSpfinish1() != null ? "§aSET" : "§cNOT SET"));
@@ -526,6 +535,7 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage("§a/bocrace singleplayer setup " + courseName + " setcourselobbybutton §7- Course lobby button (shows busy message only)");
             sender.sendMessage("§e§lCourse Components:");
             sender.sendMessage("§a/bocrace singleplayer setup " + courseName + " setboatspawn §7- Set the boat spawn location");
+            sender.sendMessage("§a/bocrace singleplayer setup " + courseName + " setboattype <type> §7- Set boat type (oak, cherry, bamboo, etc.)");
             sender.sendMessage("§a/bocrace singleplayer setup " + courseName + " setstartlinepoints <1|2> §7- Set start line points");
             sender.sendMessage("§a/bocrace singleplayer setup " + courseName + " setfinishlinepoints <1|2> §7- Set finish line points");
             sender.sendMessage("§a/bocrace singleplayer setup " + courseName + " setreturnmainbutton §7- Set return/restart button location");
@@ -545,6 +555,8 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
                 return handleSetCourseLobbyButton(sender, course);
             case "setboatspawn":
                 return handleSetBoatSpawn(sender, course);
+            case "setboattype":
+                return handleSetBoatType(sender, args, course);
             case "setstartlinepoints":
                 return handleSetStart(sender, args, course);
             case "setfinishlinepoints":
@@ -627,6 +639,42 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("§eRight-click where boats should spawn for course '" + course.getName() + "'");
         player.sendMessage("§7You have 30 seconds to right-click a block!");
         plugin.getLogger().info("[DEBUG] Player " + player.getName() + " entered setup mode for setboatspawn");
+        return true;
+    }
+    
+    private boolean handleSetBoatType(CommandSender sender, String[] args, Course course) {
+        if (args.length < 5) {
+            sender.sendMessage("§cUsage: /bocrace singleplayer setup " + course.getName() + " setboattype <type>");
+            sender.sendMessage("§7Available types: oak, birch, spruce, jungle, acacia, dark_oak, mangrove, cherry, bamboo, pale_oak");
+            return true;
+        }
+        
+        String boatTypeName = args[4].toLowerCase();
+        
+        // Validate boat type
+        String[] validTypes = {"oak", "birch", "spruce", "jungle", "acacia", "dark_oak", "mangrove", "cherry", "bamboo", "pale_oak"};
+        boolean isValid = false;
+        for (String validType : validTypes) {
+            if (validType.equals(boatTypeName)) {
+                isValid = true;
+                break;
+            }
+        }
+        
+        if (!isValid) {
+            sender.sendMessage("§cInvalid boat type: " + boatTypeName);
+            sender.sendMessage("§7Available types: oak, birch, spruce, jungle, acacia, dark_oak, mangrove, cherry, bamboo, pale_oak");
+            return true;
+        }
+        
+        // Set the boat type
+        course.setBoatType(boatTypeName.toUpperCase());
+        plugin.getStorageManager().saveCourse(course);
+        
+        sender.sendMessage("§aBoat type set to " + boatTypeName + " for course '" + course.getName() + "'!");
+        sender.sendMessage("§7New races will spawn " + boatTypeName + " boats.");
+        
+        plugin.debugLog("Boat type set for course " + course.getName() + ": " + boatTypeName);
         return true;
     }
     

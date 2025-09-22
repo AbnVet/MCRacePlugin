@@ -224,6 +224,9 @@ public class StorageManager {
         if (config.contains("particles-enabled")) {
             course.setParticlesEnabled(config.getBoolean("particles-enabled"));
         }
+        if (config.contains("boat-type")) {
+            course.setBoatType(config.getString("boat-type"));
+        }
         if (config.contains("custom-messages") && config.isConfigurationSection("custom-messages")) {
             Map<String, String> customMessages = new HashMap<>();
             ConfigurationSection messagesSection = config.getConfigurationSection("custom-messages");
@@ -331,6 +334,9 @@ public class StorageManager {
             }
             if (course.getParticlesEnabled() != null) {
                 config.set("particles-enabled", course.getParticlesEnabled());
+            }
+            if (course.getBoatType() != null) {
+                config.set("boat-type", course.getBoatType());
             }
             if (course.getCustomMessages() != null && !course.getCustomMessages().isEmpty()) {
                 for (Map.Entry<String, String> entry : course.getCustomMessages().entrySet()) {

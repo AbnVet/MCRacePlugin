@@ -22,6 +22,7 @@ com\bocrace\race\MultiplayerRaceManager$3.class
 com\bocrace\util\SoundEffectManager.class
 com\bocrace\listener\SetupListener.class
 com\bocrace\race\RaceManager.class
+com\bocrace\util\BoatManager$1.class
 com\bocrace\race\MultiplayerRace.class
 com\bocrace\listener\RaceProtectionListener.class
 com\bocrace\listener\MultiplayerButtonListener.class

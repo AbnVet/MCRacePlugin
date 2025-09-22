@@ -226,8 +226,15 @@ public class RaceCleanupListener implements Listener {
             }
         }
         
-        // Normal DQ (someone already started or not leader)
-        plugin.getMultiplayerRaceManager().disqualifyPlayer(player.getUniqueId(), "You exited your boat during the race");
+        // Check race state to determine if this is a DQ or just leaving lobby
+        if (race.getState() == MultiplayerRace.State.RUNNING) {
+            // Race is active - true disqualification
+            plugin.getMultiplayerRaceManager().disqualifyPlayer(player.getUniqueId(), "Exited boat during race");
+        } else {
+            // Race hasn't started - just leaving lobby (not a DQ)
+            plugin.getMultiplayerRaceManager().removePlayerFromRace(player.getUniqueId(), "Left before race started");
+            player.sendMessage("§eYou have left the race. You may rejoin before it starts!");
+        }
         
         plugin.multiplayerDebugLog("Multiplayer race cleanup completed for boat exit: " + player.getName());
     }

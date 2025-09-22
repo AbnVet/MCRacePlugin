@@ -53,6 +53,7 @@ public class Course {
     private Boolean soundsEnabled;      // null = use global config
     private Boolean particlesEnabled;   // null = use global config
     private Map<String, String> customMessages; // null = use global config
+    private String boatType;            // null = use default (OAK_BOAT)
     
     
     // Default constructor
@@ -260,6 +261,9 @@ public class Course {
     
     public Map<String, String> getCustomMessages() { return customMessages; }
     public void setCustomMessages(Map<String, String> customMessages) { this.customMessages = customMessages; }
+    
+    public String getBoatType() { return boatType; }
+    public void setBoatType(String boatType) { this.boatType = boatType; }
     
     /**
      * Check if sounds are enabled for this course (course setting overrides global)
