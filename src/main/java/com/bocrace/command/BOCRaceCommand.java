@@ -58,6 +58,12 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
                 return handleSingleplayerCommand(sender, args);
             case "multiplayer":
                 return handleMultiplayerCommand(sender, args);
+            case "reset":
+                if (!sender.hasPermission("bocrace.admin")) {
+                    sender.sendMessage("§cYou don't have permission to use reset commands!");
+                    return true;
+                }
+                return handleResetCommand(sender, args);
             default:
                 sender.sendMessage("§cUnknown command. Use /bocrace help for available commands.");
                 return true;
@@ -1374,6 +1380,153 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         // Show player stats
         int totalMpRaces = plugin.getRecordManager().getPlayerRacesByType(targetPlayer, com.bocrace.model.CourseType.MULTIPLAYER);
         sender.sendMessage("§7Total multiplayer races: §e" + totalMpRaces);
+        
+        return true;
+    }
+    
+    /**
+     * Handle reset commands
+     */
+    private boolean handleResetCommand(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage("§cUsage: /bocrace reset <course <name>|player <name>|global>");
+            sender.sendMessage("§7- /bocrace reset course <name> - Reset all records for a specific course");
+            sender.sendMessage("§7- /bocrace reset player <name> - Reset all records for a specific player");
+            sender.sendMessage("§7- /bocrace reset global - Reset ALL race records");
+            sender.sendMessage("§c⚠️ WARNING: These commands permanently delete race data!");
+            return true;
+        }
+        
+        String resetType = args[1].toLowerCase();
+        
+        switch (resetType) {
+            case "course":
+                return handleResetCourse(sender, args);
+            case "player":
+                return handleResetPlayer(sender, args);
+            case "global":
+                return handleResetGlobal(sender, args);
+            default:
+                sender.sendMessage("§cInvalid reset type. Use: course, player, or global");
+                return true;
+        }
+    }
+    
+    /**
+     * Reset all race records for a specific course
+     */
+    private boolean handleResetCourse(CommandSender sender, String[] args) {
+        if (args.length < 3) {
+            sender.sendMessage("§cUsage: /bocrace reset course <course_name>");
+            return true;
+        }
+        
+        String courseName = args[2];
+        
+        // Check if course exists
+        Course course = plugin.getStorageManager().getCourse(courseName);
+        if (course == null) {
+            sender.sendMessage("§cCourse '" + courseName + "' does not exist!");
+            return true;
+        }
+        
+        try {
+            // Create backup before reset
+            if (plugin.getConfigManager().isDebugEnabled()) {
+                plugin.getLogger().info("[DEBUG] Creating backup before course reset: " + courseName);
+            }
+            
+            // Reset the course records
+            boolean success = plugin.getRecordManager().resetCourseRecords(courseName);
+            
+            if (success) {
+                plugin.debugLog("Reset course records: " + courseName);
+                sender.sendMessage("§aAll race records for course '" + courseName + "' have been reset.");
+                
+                // Broadcast to all players
+                plugin.getServer().broadcastMessage("§6[BOCRace] §eAll times for course §a" + courseName + " §ehave been reset.");
+            } else {
+                sender.sendMessage("§cFailed to reset course records. Check console for details.");
+            }
+        } catch (Exception e) {
+            plugin.getLogger().severe("Error resetting course records for " + courseName + ": " + e.getMessage());
+            sender.sendMessage("§cError occurred while resetting course records.");
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Reset all race records for a specific player
+     */
+    private boolean handleResetPlayer(CommandSender sender, String[] args) {
+        if (args.length < 3) {
+            sender.sendMessage("§cUsage: /bocrace reset player <player_name>");
+            return true;
+        }
+        
+        String playerName = args[2];
+        
+        try {
+            // Create backup before reset
+            if (plugin.getConfigManager().isDebugEnabled()) {
+                plugin.getLogger().info("[DEBUG] Creating backup before player reset: " + playerName);
+            }
+            
+            // Reset the player records
+            boolean success = plugin.getRecordManager().resetPlayerRecords(playerName);
+            
+            if (success) {
+                plugin.debugLog("Reset player records: " + playerName);
+                sender.sendMessage("§aAll race records for player '" + playerName + "' have been reset.");
+                
+                // Broadcast to all players
+                plugin.getServer().broadcastMessage("§6[BOCRace] §eAll times for player §a" + playerName + " §ehave been reset.");
+            } else {
+                sender.sendMessage("§cPlayer '" + playerName + "' has no race records to reset.");
+            }
+        } catch (Exception e) {
+            plugin.getLogger().severe("Error resetting player records for " + playerName + ": " + e.getMessage());
+            sender.sendMessage("§cError occurred while resetting player records.");
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Reset ALL race records globally
+     */
+    private boolean handleResetGlobal(CommandSender sender, String[] args) {
+        // Double confirmation for global reset
+        if (args.length < 3 || !args[2].equals("confirm")) {
+            sender.sendMessage("§c⚠️ DANGER: This will reset ALL race records for ALL courses and players!");
+            sender.sendMessage("§cType: /bocrace reset global confirm");
+            sender.sendMessage("§cThis action cannot be undone!");
+            return true;
+        }
+        
+        try {
+            // Create backup before reset
+            if (plugin.getConfigManager().isDebugEnabled()) {
+                plugin.getLogger().info("[DEBUG] Creating backup before global reset");
+            }
+            
+            // Reset all records
+            boolean success = plugin.getRecordManager().resetAllRecords();
+            
+            if (success) {
+                plugin.debugLog("Reset ALL race records globally");
+                sender.sendMessage("§aAll race records have been reset globally.");
+                
+                // Broadcast to all players
+                plugin.getServer().broadcastMessage("§6[BOCRace] §c⚠️ ALL race records have been reset globally!");
+            } else {
+                sender.sendMessage("§cFailed to reset global records. Check console for details.");
+            }
+        } catch (Exception e) {
+            plugin.getLogger().severe("Error resetting global records: " + e.getMessage());
+            sender.sendMessage("§cError occurred while resetting global records.");
+        }
         
         return true;
     }

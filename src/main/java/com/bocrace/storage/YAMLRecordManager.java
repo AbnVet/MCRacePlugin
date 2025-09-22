@@ -394,4 +394,197 @@ public class YAMLRecordManager implements RecordManager {
             return 0;
         }
     }
+    
+    /**
+     * Reset all race records for a specific course
+     */
+    public boolean resetCourseRecords(String courseName) {
+        try {
+            plugin.debugLog("Resetting course records for: " + courseName);
+            
+            // Create backup before reset
+            createBackup();
+            
+            // Reset singleplayer course records
+            File spCourseFile = new File(singleplayerCoursesDir, courseName + "_records.yml");
+            if (spCourseFile.exists()) {
+                spCourseFile.delete();
+                plugin.debugLog("Deleted singleplayer course records: " + spCourseFile.getName());
+            }
+            
+            // Reset multiplayer course records
+            File mpCourseFile = new File(multiplayerCoursesDir, courseName + "_records.yml");
+            if (mpCourseFile.exists()) {
+                mpCourseFile.delete();
+                plugin.debugLog("Deleted multiplayer course records: " + mpCourseFile.getName());
+            }
+            
+            // Remove course from all player recent races
+            removeCourseFromPlayerRecent(courseName);
+            
+            plugin.debugLog("Successfully reset course records for: " + courseName);
+            return true;
+        } catch (Exception e) {
+            plugin.getLogger().severe("Error resetting course records for " + courseName + ": " + e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Reset all race records for a specific player
+     */
+    public boolean resetPlayerRecords(String playerName) {
+        try {
+            plugin.debugLog("Resetting player records for: " + playerName);
+            
+            // Create backup before reset
+            createBackup();
+            
+            // Reset player stats
+            FileConfiguration statsConfig = YamlConfiguration.loadConfiguration(playerStatsFile);
+            if (statsConfig.contains(playerName)) {
+                statsConfig.set(playerName, null);
+                statsConfig.save(playerStatsFile);
+                plugin.debugLog("Reset player stats: " + playerName);
+            }
+            
+            // Reset player recent races
+            FileConfiguration recentConfig = YamlConfiguration.loadConfiguration(playerRecentFile);
+            if (recentConfig.contains(playerName)) {
+                recentConfig.set(playerName, null);
+                recentConfig.save(playerRecentFile);
+                plugin.debugLog("Reset player recent races: " + playerName);
+            }
+            
+            plugin.debugLog("Successfully reset player records for: " + playerName);
+            return true;
+        } catch (Exception e) {
+            plugin.getLogger().severe("Error resetting player records for " + playerName + ": " + e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Reset ALL race records globally
+     */
+    public boolean resetAllRecords() {
+        try {
+            plugin.debugLog("Resetting ALL race records globally");
+            
+            // Create backup before reset
+            createBackup();
+            
+            // Delete all course record files
+            deleteAllFilesInDirectory(singleplayerCoursesDir);
+            deleteAllFilesInDirectory(multiplayerCoursesDir);
+            
+            // Reset all player stats
+            FileConfiguration statsConfig = new YamlConfiguration();
+            statsConfig.save(playerStatsFile);
+            
+            // Reset all player recent races
+            FileConfiguration recentConfig = new YamlConfiguration();
+            recentConfig.save(playerRecentFile);
+            
+            plugin.debugLog("Successfully reset ALL race records globally");
+            return true;
+        } catch (Exception e) {
+            plugin.getLogger().severe("Error resetting global records: " + e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Create a backup of all data files before reset operations
+     */
+    private void createBackup() {
+        try {
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
+            File backupDir = new File(plugin.getDataFolder(), "backups/" + timestamp);
+            backupDir.mkdirs();
+            
+            plugin.debugLog("Creating backup at: " + backupDir.getAbsolutePath());
+            
+            // Backup data directory
+            copyDirectory(dataDir, new File(backupDir, "data"));
+            
+            plugin.debugLog("Backup created successfully");
+        } catch (Exception e) {
+            plugin.getLogger().warning("Failed to create backup: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Remove a course from all player recent race lists
+     */
+    private void removeCourseFromPlayerRecent(String courseName) {
+        try {
+            FileConfiguration recentConfig = YamlConfiguration.loadConfiguration(playerRecentFile);
+            boolean modified = false;
+            
+            for (String playerName : recentConfig.getKeys(false)) {
+                if (recentConfig.isList(playerName)) {
+                    List<Map<String, Object>> playerRaces = (List<Map<String, Object>>) recentConfig.getList(playerName);
+                    if (playerRaces != null) {
+                        List<Map<String, Object>> updatedRaces = new ArrayList<>();
+                        for (Map<String, Object> race : playerRaces) {
+                            if (!courseName.equals(race.get("course"))) {
+                                updatedRaces.add(race);
+                            }
+                        }
+                        if (updatedRaces.size() != playerRaces.size()) {
+                            recentConfig.set(playerName, updatedRaces);
+                            modified = true;
+                        }
+                    }
+                }
+            }
+            
+            if (modified) {
+                recentConfig.save(playerRecentFile);
+                plugin.debugLog("Removed course '" + courseName + "' from player recent races");
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("Error removing course from player recent races: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Delete all files in a directory
+     */
+    private void deleteAllFilesInDirectory(File directory) {
+        if (directory.exists() && directory.isDirectory()) {
+            File[] files = directory.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (file.isFile()) {
+                        file.delete();
+                        plugin.debugLog("Deleted file: " + file.getName());
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * Copy a directory recursively
+     */
+    private void copyDirectory(File source, File destination) throws IOException {
+        if (source.isDirectory()) {
+            if (!destination.exists()) {
+                destination.mkdirs();
+            }
+            
+            String[] files = source.list();
+            if (files != null) {
+                for (String file : files) {
+                    File srcFile = new File(source, file);
+                    File destFile = new File(destination, file);
+                    copyDirectory(srcFile, destFile);
+                }
+            }
+        } else {
+            java.nio.file.Files.copy(source.toPath(), destination.toPath());
+        }
+    }
 }

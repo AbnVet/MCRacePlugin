@@ -72,4 +72,24 @@ public interface RecordManager {
      * @return Course name with most races, or null if no races
      */
     String getPlayerFavoriteCourse(String player);
+    
+    /**
+     * Reset all race records for a specific course
+     * @param courseName Course name to reset
+     * @return true if successful, false otherwise
+     */
+    boolean resetCourseRecords(String courseName);
+    
+    /**
+     * Reset all race records for a specific player
+     * @param playerName Player name to reset
+     * @return true if successful, false otherwise
+     */
+    boolean resetPlayerRecords(String playerName);
+    
+    /**
+     * Reset ALL race records globally
+     * @return true if successful, false otherwise
+     */
+    boolean resetAllRecords();
 }
