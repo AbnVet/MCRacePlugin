@@ -26,6 +26,15 @@ public class RaceRecord {
         this.date = LocalDateTime.now();
     }
     
+    // Full constructor with date
+    public RaceRecord(String player, String course, double time, LocalDateTime date, CourseType type) {
+        this.player = player;
+        this.course = course;
+        this.time = time;
+        this.date = date;
+        this.type = type;
+    }
+    
     // Getters and setters
     public String getPlayer() { return player; }
     public void setPlayer(String player) { this.player = player; }

@@ -11,81 +11,68 @@ import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.WeekFields;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * YAML implementation of RecordManager
- * Stores race records in separate YAML files for easy MySQL migration later
+ * Clean YAML implementation of RecordManager
+ * NEW STRUCTURE: All records saved + period verification files + 30-day retention
  */
 public class YAMLRecordManager implements RecordManager {
     
     private final BOCRacePlugin plugin;
+    
+    // NEW CLEAN DIRECTORY STRUCTURE
     private final File dataDir;
-    private final File singleplayerDir;
-    private final File singleplayerCoursesDir;
-    private final File singleplayerPlayersDir;
-    private final File multiplayerDir;
-    private final File multiplayerCoursesDir;
-    private final File multiplayerPlayersDir;
+    private final File coursesDir;
+    private final File playersDir;
+    private final File cacheDir;
     private final File playerStatsFile;
     private final File playerRecentFile;
+    
+    // In-memory cache for real-time hologram updates
+    private final Map<String, List<RaceRecord>> leaderboardCache = new ConcurrentHashMap<>();
+    private final Map<String, LocalDateTime> cacheTimestamps = new ConcurrentHashMap<>();
+    private static final long CACHE_DURATION = 300000; // 5 minutes
+    
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     
     public YAMLRecordManager(BOCRacePlugin plugin) {
         this.plugin = plugin;
         this.dataDir = new File(plugin.getDataFolder(), "data");
-        this.singleplayerDir = new File(dataDir, "singleplayer");
-        this.singleplayerCoursesDir = new File(singleplayerDir, "courses");
-        this.singleplayerPlayersDir = new File(singleplayerDir, "players");
-        this.multiplayerDir = new File(dataDir, "multiplayer");
-        this.multiplayerCoursesDir = new File(multiplayerDir, "courses");
-        this.multiplayerPlayersDir = new File(multiplayerDir, "players");
-        this.playerStatsFile = new File(singleplayerPlayersDir, "player_stats.yml");
-        this.playerRecentFile = new File(singleplayerPlayersDir, "player_recent.yml");
+        this.coursesDir = new File(dataDir, "courses");
+        this.playersDir = new File(dataDir, "players");
+        this.cacheDir = new File(dataDir, "cache");
+        this.playerStatsFile = new File(playersDir, "stats.yml");
+        this.playerRecentFile = new File(playersDir, "recent.yml");
         
-        // Create directory structure
         createDirectoryStructure();
     }
     
     private void createDirectoryStructure() {
-        plugin.debugLog("Creating data directory structure...");
+        plugin.debugLog("Creating NEW clean data directory structure...");
         
-        // Create main data directory
+        // Create main directories
         if (!dataDir.exists()) {
             dataDir.mkdirs();
             plugin.debugLog("Created data directory: " + dataDir.getAbsolutePath());
         }
-        
-        // Create singleplayer directories
-        if (!singleplayerDir.exists()) {
-            singleplayerDir.mkdirs();
-            plugin.debugLog("Created singleplayer directory: " + singleplayerDir.getAbsolutePath());
+        if (!coursesDir.exists()) {
+            coursesDir.mkdirs();
+            plugin.debugLog("Created courses directory: " + coursesDir.getAbsolutePath());
         }
-        if (!singleplayerCoursesDir.exists()) {
-            singleplayerCoursesDir.mkdirs();
-            plugin.debugLog("Created singleplayer courses directory: " + singleplayerCoursesDir.getAbsolutePath());
+        if (!playersDir.exists()) {
+            playersDir.mkdirs();
+            plugin.debugLog("Created players directory: " + playersDir.getAbsolutePath());
         }
-        if (!singleplayerPlayersDir.exists()) {
-            singleplayerPlayersDir.mkdirs();
-            plugin.debugLog("Created singleplayer players directory: " + singleplayerPlayersDir.getAbsolutePath());
+        if (!cacheDir.exists()) {
+            cacheDir.mkdirs();
+            plugin.debugLog("Created cache directory: " + cacheDir.getAbsolutePath());
         }
         
-        // Create multiplayer directories (for future use)
-        if (!multiplayerDir.exists()) {
-            multiplayerDir.mkdirs();
-            plugin.debugLog("Created multiplayer directory: " + multiplayerDir.getAbsolutePath());
-        }
-        if (!multiplayerCoursesDir.exists()) {
-            multiplayerCoursesDir.mkdirs();
-            plugin.debugLog("Created multiplayer courses directory: " + multiplayerCoursesDir.getAbsolutePath());
-        }
-        if (!multiplayerPlayersDir.exists()) {
-            multiplayerPlayersDir.mkdirs();
-            plugin.debugLog("Created multiplayer players directory: " + multiplayerPlayersDir.getAbsolutePath());
-        }
-        
-        plugin.debugLog("Data directory structure created successfully");
+        plugin.debugLog("NEW directory structure created successfully");
     }
     
     @Override
@@ -93,37 +80,44 @@ public class YAMLRecordManager implements RecordManager {
         saveRaceRecord(player, course, time, type, LocalDateTime.now());
     }
     
+    @Override
     public void saveRaceRecord(String player, String course, double time, CourseType type, LocalDateTime date) {
         plugin.debugLog("Saving race record: " + player + " - " + course + " - " + time + "s - " + type + " - " + date);
         
         try {
-            // Save to course-specific records file
-            saveToCourseRecords(player, course, time, type, date);
+            // Round time to 2 decimal places (fix crazy precision)
+            double cleanTime = Math.round(time * 100.0) / 100.0;
             
-            // Update player recent races
-            updatePlayerRecent(player, course, time, type, date);
+            // Save to ALL records file
+            saveToAllRecords(player, course, cleanTime, type, date);
             
-            // Update player stats
-            updatePlayerStats(player, type);
+            // Save to period files for verification
+            saveToPeriodFiles(player, course, cleanTime, type, date);
             
-            plugin.debugLog("Race record saved successfully");
+            // Update player data
+            updatePlayerData(player, type);
+            
+            // Update cache for real-time hologram updates
+            updateCache(course);
+            
+            plugin.debugLog("Race record saved successfully to new structure");
             
         } catch (IOException e) {
             plugin.getLogger().severe("Failed to save race record: " + e.getMessage());
         }
     }
     
-    private void saveToCourseRecords(String player, String course, double time, CourseType type) throws IOException {
-        saveToCourseRecords(player, course, time, type, LocalDateTime.now());
-    }
-    
-    private void saveToCourseRecords(String player, String course, double time, CourseType type, LocalDateTime date) throws IOException {
-        // Determine which courses directory to use based on type
-        File coursesDir = (type == CourseType.SINGLEPLAYER) ? singleplayerCoursesDir : multiplayerCoursesDir;
-        File courseFile = new File(coursesDir, course + "_records.yml");
+    /**
+     * Save to all_records.yml - EVERY race record (no data loss)
+     */
+    private void saveToAllRecords(String player, String course, double time, CourseType type, LocalDateTime date) throws IOException {
+        File courseDir = new File(coursesDir, course);
+        if (!courseDir.exists()) {
+            courseDir.mkdirs();
+        }
         
-        plugin.debugLog("Saving to course file: " + courseFile.getAbsolutePath());
-        FileConfiguration config = YamlConfiguration.loadConfiguration(courseFile);
+        File allRecordsFile = new File(courseDir, "all_records.yml");
+        FileConfiguration config = YamlConfiguration.loadConfiguration(allRecordsFile);
         
         // Get existing records
         List<Map<String, Object>> records = new ArrayList<>();
@@ -146,26 +140,12 @@ public class YAMLRecordManager implements RecordManager {
         newRecord.put("type", type.toString());
         records.add(newRecord);
         
-        // Sort by time (best first) and keep only top 10
-        records.sort((a, b) -> Double.compare((Double) a.get("time"), (Double) b.get("time")));
-        
-        // ONE RECORD PER PLAYER RULE - Keep only the fastest time per player
-        Map<String, Map<String, Object>> bestPerPlayer = new HashMap<>();
-        for (Map<String, Object> record : records) {
-            String player = (String) record.get("player");
-            if (!bestPerPlayer.containsKey(player)) {
-                bestPerPlayer.put(player, record);
-            }
-        }
-        
-        // Convert back to list and sort by time
-        records = new ArrayList<>(bestPerPlayer.values());
-        records.sort((a, b) -> Double.compare((Double) a.get("time"), (Double) b.get("time")));
-        
-        // Keep only top 10
-        if (records.size() > 10) {
-            records = records.subList(0, 10);
-        }
+        // Sort by date (most recent first) - keep ALL records
+        records.sort((a, b) -> {
+            String dateA = (String) a.get("date");
+            String dateB = (String) b.get("date");
+            return dateB.compareTo(dateA); // Most recent first
+        });
         
         // Save back to file
         config.set("records", null);
@@ -178,572 +158,484 @@ public class YAMLRecordManager implements RecordManager {
             config.set("records." + key + ".type", record.get("type"));
         }
         
-        config.save(courseFile);
-        plugin.debugLog("Course records updated: " + course + " (" + records.size() + " records)");
+        config.save(allRecordsFile);
+        plugin.debugLog("Saved to all_records.yml - Total records: " + records.size());
     }
     
-    private void updatePlayerRecent(String player, String course, double time, CourseType type) throws IOException {
-        updatePlayerRecent(player, course, time, type, LocalDateTime.now());
-    }
-    
-    private void updatePlayerRecent(String player, String course, double time, CourseType type, LocalDateTime date) throws IOException {
-        FileConfiguration config = YamlConfiguration.loadConfiguration(playerRecentFile);
+    /**
+     * Save to period files for easy verification
+     */
+    private void saveToPeriodFiles(String player, String course, double time, CourseType type, LocalDateTime date) throws IOException {
+        File courseDir = new File(coursesDir, course);
         
-        // Get existing recent races
-        List<Map<String, Object>> recent = new ArrayList<>();
-        if (config.contains("players." + player + ".recent")) {
-            for (String key : config.getConfigurationSection("players." + player + ".recent").getKeys(false)) {
+        // Daily file
+        String dailyFileName = "daily_" + date.format(DateTimeFormatter.ofPattern("yyyy_MM_dd")) + ".yml";
+        saveToPeriodFile(new File(courseDir, dailyFileName), player, course, time, type, date);
+        
+        // Weekly file
+        String weeklyFileName = "weekly_" + getWeekString(date) + ".yml";
+        saveToPeriodFile(new File(courseDir, weeklyFileName), player, course, time, type, date);
+        
+        // Monthly file
+        String monthlyFileName = "monthly_" + date.format(DateTimeFormatter.ofPattern("yyyy_MM")) + ".yml";
+        saveToPeriodFile(new File(courseDir, monthlyFileName), player, course, time, type, date);
+        
+        plugin.debugLog("Saved to period files - Daily: " + dailyFileName + ", Weekly: " + weeklyFileName + ", Monthly: " + monthlyFileName);
+    }
+    
+    private void saveToPeriodFile(File periodFile, String player, String course, double time, CourseType type, LocalDateTime date) throws IOException {
+        FileConfiguration config = YamlConfiguration.loadConfiguration(periodFile);
+        
+        List<Map<String, Object>> records = new ArrayList<>();
+        if (config.contains("records")) {
+            for (String key : config.getConfigurationSection("records").getKeys(false)) {
                 Map<String, Object> record = new HashMap<>();
-                record.put("course", config.getString("players." + player + ".recent." + key + ".course"));
-                record.put("time", config.getDouble("players." + player + ".recent." + key + ".time"));
-                record.put("date", config.getString("players." + player + ".recent." + key + ".date"));
-                record.put("type", config.getString("players." + player + ".recent." + key + ".type"));
-                recent.add(record);
+                record.put("player", config.getString("records." + key + ".player"));
+                record.put("time", config.getDouble("records." + key + ".time"));
+                record.put("date", config.getString("records." + key + ".date"));
+                record.put("type", config.getString("records." + key + ".type"));
+                records.add(record);
             }
         }
         
-        // Add new record at the beginning
+        // Add new record
         Map<String, Object> newRecord = new HashMap<>();
+        newRecord.put("player", player);
         newRecord.put("course", course);
         newRecord.put("time", time);
         newRecord.put("date", date.format(dateFormatter));
         newRecord.put("type", type.toString());
-        recent.add(0, newRecord);
+        records.add(newRecord);
         
-        // Keep only most recent 5
-        if (recent.size() > 5) {
-            recent = recent.subList(0, 5);
-        }
+        // Sort by time (best first)
+        records.sort((a, b) -> Double.compare((Double) a.get("time"), (Double) b.get("time")));
         
         // Save back to file
-        config.set("players." + player + ".recent", null);
+        config.set("records", null);
+        for (int i = 0; i < records.size(); i++) {
+            Map<String, Object> record = records.get(i);
+            String key = "record" + (i + 1);
+            config.set("records." + key + ".player", record.get("player"));
+            config.set("records." + key + ".course", record.get("course"));
+            config.set("records." + key + ".time", record.get("time"));
+            config.set("records." + key + ".date", record.get("date"));
+            config.set("records." + key + ".type", record.get("type"));
+        }
+        
+        config.save(periodFile);
+    }
+    
+    /**
+     * Update player statistics and recent races
+     */
+    private void updatePlayerData(String player, CourseType type) throws IOException {
+        // Update player stats
+        FileConfiguration statsConfig = YamlConfiguration.loadConfiguration(playerStatsFile);
+        
+        int totalRaces = statsConfig.getInt("players." + player + ".totalRaces", 0);
+        int singleplayerRaces = statsConfig.getInt("players." + player + ".singleplayerRaces", 0);
+        int multiplayerRaces = statsConfig.getInt("players." + player + ".multiplayerRaces", 0);
+        
+        statsConfig.set("players." + player + ".totalRaces", totalRaces + 1);
+        statsConfig.set("players." + player + ".lastRaceDate", LocalDateTime.now().format(dateFormatter));
+        
+        if (type == CourseType.SINGLEPLAYER) {
+            statsConfig.set("players." + player + ".singleplayerRaces", singleplayerRaces + 1);
+        } else {
+            statsConfig.set("players." + player + ".multiplayerRaces", multiplayerRaces + 1);
+        }
+        
+        statsConfig.save(playerStatsFile);
+        
+        // Update recent races (keep last 10)
+        FileConfiguration recentConfig = YamlConfiguration.loadConfiguration(playerRecentFile);
+        
+        List<Map<String, Object>> recent = new ArrayList<>();
+        if (recentConfig.contains("players." + player + ".recent")) {
+            for (String key : recentConfig.getConfigurationSection("players." + player + ".recent").getKeys(false)) {
+                Map<String, Object> record = new HashMap<>();
+                record.put("course", recentConfig.getString("players." + player + ".recent." + key + ".course"));
+                record.put("time", recentConfig.getDouble("players." + player + ".recent." + key + ".time"));
+                record.put("date", recentConfig.getString("players." + player + ".recent." + key + ".date"));
+                record.put("type", recentConfig.getString("players." + player + ".recent." + key + ".type"));
+                recent.add(record);
+            }
+        }
+        
+        // Add new recent record at beginning
+        Map<String, Object> newRecent = new HashMap<>();
+        newRecent.put("course", "Unknown"); // Will be updated by caller
+        newRecent.put("time", 0.0); // Will be updated by caller
+        newRecent.put("date", LocalDateTime.now().format(dateFormatter));
+        newRecent.put("type", type.toString());
+        recent.add(0, newRecent);
+        
+        // Keep only last 10
+        if (recent.size() > 10) {
+            recent = recent.subList(0, 10);
+        }
+        
+        // Save back
+        recentConfig.set("players." + player + ".recent", null);
         for (int i = 0; i < recent.size(); i++) {
             Map<String, Object> record = recent.get(i);
             String key = "race" + (i + 1);
-            config.set("players." + player + ".recent." + key + ".course", record.get("course"));
-            config.set("players." + player + ".recent." + key + ".time", record.get("time"));
-            config.set("players." + player + ".recent." + key + ".date", record.get("date"));
-            config.set("players." + player + ".recent." + key + ".type", record.get("type"));
+            recentConfig.set("players." + player + ".recent." + key + ".course", record.get("course"));
+            recentConfig.set("players." + player + ".recent." + key + ".time", record.get("time"));
+            recentConfig.set("players." + player + ".recent." + key + ".date", record.get("date"));
+            recentConfig.set("players." + player + ".recent." + key + ".type", record.get("type"));
         }
         
-        config.save(playerRecentFile);
-        plugin.debugLog("Player recent races updated: " + player + " (" + recent.size() + " races)");
+        recentConfig.save(playerRecentFile);
     }
     
-    private void updatePlayerStats(String player, CourseType type) throws IOException {
-        FileConfiguration config = YamlConfiguration.loadConfiguration(playerStatsFile);
+    /**
+     * Update cache for real-time hologram updates
+     */
+    private void updateCache(String course) {
+        // Invalidate cache for this course
+        leaderboardCache.remove(course + "_all");
+        leaderboardCache.remove(course + "_daily");
+        leaderboardCache.remove(course + "_weekly");
+        leaderboardCache.remove(course + "_monthly");
         
-        // Get current stats
-        int totalRaces = config.getInt("players." + player + ".totalRaces", 0);
-        int singleplayerRaces = config.getInt("players." + player + ".singleplayerRaces", 0);
-        int multiplayerRaces = config.getInt("players." + player + ".multiplayerRaces", 0);
-        
-        // Update stats
-        totalRaces++;
-        if (type == CourseType.SINGLEPLAYER) {
-            singleplayerRaces++;
-        } else if (type == CourseType.MULTIPLAYER) {
-            multiplayerRaces++;
-        }
-        
-        // Save updated stats
-        config.set("players." + player + ".totalRaces", totalRaces);
-        config.set("players." + player + ".singleplayerRaces", singleplayerRaces);
-        config.set("players." + player + ".multiplayerRaces", multiplayerRaces);
-        config.set("players." + player + ".lastRaceDate", LocalDateTime.now().format(dateFormatter));
-        
-        config.save(playerStatsFile);
-        plugin.debugLog("Player stats updated: " + player + " (Total: " + totalRaces + ", SP: " + singleplayerRaces + ", MP: " + multiplayerRaces + ")");
+        plugin.debugLog("Cache invalidated for course: " + course);
     }
     
     @Override
     public List<RaceRecord> getTopTimes(String course, int limit) {
-        // For now, assume singleplayer (can be enhanced later to support both types)
-        File courseFile = new File(singleplayerCoursesDir, course + "_records.yml");
-        
-        // Removed debug spam - this gets called constantly by PlaceholderAPI
-        if (!courseFile.exists()) {
-            return new ArrayList<>();
+        // Check cache first
+        String cacheKey = course + "_all";
+        if (leaderboardCache.containsKey(cacheKey) && !isCacheExpired(cacheKey)) {
+            List<RaceRecord> cached = leaderboardCache.get(cacheKey);
+            return cached.size() > limit ? cached.subList(0, limit) : cached;
         }
         
-        FileConfiguration config = YamlConfiguration.loadConfiguration(courseFile);
-        List<RaceRecord> records = new ArrayList<>();
+        // Load from file
+        List<RaceRecord> records = loadAllRecords(course);
         
-        if (config.contains("records")) {
-            for (String key : config.getConfigurationSection("records").getKeys(false)) {
-                RaceRecord record = new RaceRecord();
-                record.setPlayer(config.getString("records." + key + ".player"));
-                record.setCourse(course);
-                record.setTime(config.getDouble("records." + key + ".time"));
-                record.setDate(LocalDateTime.parse(config.getString("records." + key + ".date"), dateFormatter));
-                record.setType(CourseType.valueOf(config.getString("records." + key + ".type")));
-                records.add(record);
+        // Apply ONE RECORD PER PLAYER rule
+        Map<String, RaceRecord> bestPerPlayer = new HashMap<>();
+        for (RaceRecord record : records) {
+            String player = record.getPlayer();
+            if (!bestPerPlayer.containsKey(player) || record.getTime() < bestPerPlayer.get(player).getTime()) {
+                bestPerPlayer.put(player, record);
             }
         }
         
-        // Sort by time (best first) and limit results
-        records.sort(Comparator.comparingDouble(RaceRecord::getTime));
-        if (records.size() > limit) {
-            records = records.subList(0, limit);
+        // Sort by time (best first) and limit
+        List<RaceRecord> result = new ArrayList<>(bestPerPlayer.values());
+        result.sort(Comparator.comparingDouble(RaceRecord::getTime));
+        if (result.size() > limit) {
+            result = result.subList(0, limit);
         }
         
-        return records;
+        // Update cache
+        leaderboardCache.put(cacheKey, result);
+        cacheTimestamps.put(cacheKey, LocalDateTime.now());
+        
+        return result;
     }
     
     @Override
     public List<RaceRecord> getTopTimesForPeriod(String course, Period period, int limit) {
-        // Get all records first
-        List<RaceRecord> allRecords = getTopTimes(course, Integer.MAX_VALUE);
+        String cacheKey = course + "_" + period.name().toLowerCase();
         
-        // Filter by period
-        LocalDateTime now = LocalDateTime.now();
-        List<RaceRecord> filteredRecords = allRecords.stream()
-            .filter(record -> isWithinPeriod(record.getDate(), period, now))
-            .collect(Collectors.toList());
-        
-        // Sort by time (best first) and limit results
-        filteredRecords.sort(Comparator.comparingDouble(RaceRecord::getTime));
-        if (filteredRecords.size() > limit) {
-            filteredRecords = filteredRecords.subList(0, limit);
+        // Check cache first
+        if (leaderboardCache.containsKey(cacheKey) && !isCacheExpired(cacheKey)) {
+            List<RaceRecord> cached = leaderboardCache.get(cacheKey);
+            return cached.size() > limit ? cached.subList(0, limit) : cached;
         }
         
-        return filteredRecords;
-    }
-    
-    /**
-     * Check if a record date falls within the specified period
-     */
-    private boolean isWithinPeriod(LocalDateTime recordDate, Period period, LocalDateTime now) {
-        switch (period) {
-            case DAILY:
-                // Today (midnight to midnight)
-                LocalDateTime todayStart = now.toLocalDate().atStartOfDay();
-                LocalDateTime todayEnd = todayStart.plusDays(1);
-                return !recordDate.isBefore(todayStart) && recordDate.isBefore(todayEnd);
-                
-            case WEEKLY:
-                // Last 7 days (rolling)
-                LocalDateTime weekAgo = now.minusDays(7);
-                return !recordDate.isBefore(weekAgo) && !recordDate.isAfter(now);
-                
-            case MONTHLY:
-                // Current calendar month (1st to last day)
-                LocalDateTime monthStart = now.toLocalDate().withDayOfMonth(1).atStartOfDay();
-                LocalDateTime nextMonth = monthStart.plusMonths(1);
-                return !recordDate.isBefore(monthStart) && recordDate.isBefore(nextMonth);
-                
-            default:
-                return false;
-        }
-    }
-    
-    @Override
-    public List<RaceRecord> getPlayerRecent(String player, int limit) {
-        FileConfiguration config = YamlConfiguration.loadConfiguration(playerRecentFile);
-        List<RaceRecord> records = new ArrayList<>();
+        // Load from period file
+        List<RaceRecord> records = loadPeriodRecords(course, period);
         
-        if (config.contains("players." + player + ".recent")) {
-            for (String key : config.getConfigurationSection("players." + player + ".recent").getKeys(false)) {
-                RaceRecord record = new RaceRecord();
-                record.setPlayer(player);
-                record.setCourse(config.getString("players." + player + ".recent." + key + ".course"));
-                record.setTime(config.getDouble("players." + player + ".recent." + key + ".time"));
-                record.setDate(LocalDateTime.parse(config.getString("players." + player + ".recent." + key + ".date"), dateFormatter));
-                record.setType(CourseType.valueOf(config.getString("players." + player + ".recent." + key + ".type")));
-                records.add(record);
+        // Apply ONE RECORD PER PLAYER rule
+        Map<String, RaceRecord> bestPerPlayer = new HashMap<>();
+        for (RaceRecord record : records) {
+            String player = record.getPlayer();
+            if (!bestPerPlayer.containsKey(player) || record.getTime() < bestPerPlayer.get(player).getTime()) {
+                bestPerPlayer.put(player, record);
             }
         }
         
-        // Sort by date (most recent first) and limit results
-        records.sort((a, b) -> b.getDate().compareTo(a.getDate()));
-        if (records.size() > limit) {
-            records = records.subList(0, limit);
+        // Sort by time (best first) and limit
+        List<RaceRecord> result = new ArrayList<>(bestPerPlayer.values());
+        result.sort(Comparator.comparingDouble(RaceRecord::getTime));
+        if (result.size() > limit) {
+            result = result.subList(0, limit);
+        }
+        
+        // Update cache
+        leaderboardCache.put(cacheKey, result);
+        cacheTimestamps.put(cacheKey, LocalDateTime.now());
+        
+        return result;
+    }
+    
+    /**
+     * Load all records from all_records.yml
+     */
+    private List<RaceRecord> loadAllRecords(String course) {
+        List<RaceRecord> records = new ArrayList<>();
+        
+        try {
+            File courseDir = new File(coursesDir, course);
+            File allRecordsFile = new File(courseDir, "all_records.yml");
+            
+            if (!allRecordsFile.exists()) {
+                return records;
+            }
+            
+            FileConfiguration config = YamlConfiguration.loadConfiguration(allRecordsFile);
+            if (config.contains("records")) {
+                for (String key : config.getConfigurationSection("records").getKeys(false)) {
+                    String player = config.getString("records." + key + ".player");
+                    double time = config.getDouble("records." + key + ".time");
+                    String dateStr = config.getString("records." + key + ".date");
+                    String typeStr = config.getString("records." + key + ".type");
+                    
+                    LocalDateTime date = LocalDateTime.parse(dateStr, dateFormatter);
+                    CourseType type = CourseType.valueOf(typeStr);
+                    
+                    records.add(new RaceRecord(player, course, time, date, type));
+                }
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("Failed to load all records for " + course + ": " + e.getMessage());
         }
         
         return records;
     }
     
+    /**
+     * Load records from period file
+     */
+    private List<RaceRecord> loadPeriodRecords(String course, Period period) {
+        List<RaceRecord> records = new ArrayList<>();
+        
+        try {
+            File courseDir = new File(coursesDir, course);
+            File periodFile = getPeriodFile(courseDir, period);
+            
+            if (!periodFile.exists()) {
+                return records;
+            }
+            
+            FileConfiguration config = YamlConfiguration.loadConfiguration(periodFile);
+            if (config.contains("records")) {
+                for (String key : config.getConfigurationSection("records").getKeys(false)) {
+                    String player = config.getString("records." + key + ".player");
+                    String courseName = config.getString("records." + key + ".course");
+                    double time = config.getDouble("records." + key + ".time");
+                    String dateStr = config.getString("records." + key + ".date");
+                    String typeStr = config.getString("records." + key + ".type");
+                    
+                    LocalDateTime date = LocalDateTime.parse(dateStr, dateFormatter);
+                    CourseType type = CourseType.valueOf(typeStr);
+                    
+                    records.add(new RaceRecord(player, courseName, time, date, type));
+                }
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("Failed to load period records for " + course + " period " + period + ": " + e.getMessage());
+        }
+        
+        return records;
+    }
+    
+    private File getPeriodFile(File courseDir, Period period) {
+        LocalDateTime now = LocalDateTime.now();
+        
+        switch (period) {
+            case DAILY:
+                String dailyFileName = "daily_" + now.format(DateTimeFormatter.ofPattern("yyyy_MM_dd")) + ".yml";
+                return new File(courseDir, dailyFileName);
+            case WEEKLY:
+                String weeklyFileName = "weekly_" + getWeekString(now) + ".yml";
+                return new File(courseDir, weeklyFileName);
+            case MONTHLY:
+                String monthlyFileName = "monthly_" + now.format(DateTimeFormatter.ofPattern("yyyy_MM")) + ".yml";
+                return new File(courseDir, monthlyFileName);
+            default:
+                return null;
+        }
+    }
+    
+    private String getWeekString(LocalDateTime date) {
+        int year = date.getYear();
+        int week = date.get(WeekFields.ISO.weekOfYear());
+        return year + "_week_" + week;
+    }
+    
+    private boolean isCacheExpired(String cacheKey) {
+        if (!cacheTimestamps.containsKey(cacheKey)) {
+            return true;
+        }
+        
+        LocalDateTime cacheTime = cacheTimestamps.get(cacheKey);
+        return LocalDateTime.now().isAfter(cacheTime.plusSeconds(CACHE_DURATION / 1000));
+    }
+    
+    // Implement other RecordManager methods...
+    @Override
+    public List<RaceRecord> getPlayerRecent(String player, int limit) {
+        List<RaceRecord> records = new ArrayList<>();
+        
+        try {
+            FileConfiguration config = YamlConfiguration.loadConfiguration(playerRecentFile);
+            if (config.contains("players." + player + ".recent")) {
+                for (String key : config.getConfigurationSection("players." + player + ".recent").getKeys(false)) {
+                    String course = config.getString("players." + player + ".recent." + key + ".course");
+                    double time = config.getDouble("players." + player + ".recent." + key + ".time");
+                    String dateStr = config.getString("players." + player + ".recent." + key + ".date");
+                    String typeStr = config.getString("players." + player + ".recent." + key + ".type");
+                    
+                    LocalDateTime date = LocalDateTime.parse(dateStr, dateFormatter);
+                    CourseType type = CourseType.valueOf(typeStr);
+                    
+                    records.add(new RaceRecord(player, course, time, date, type));
+                }
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("Failed to load recent records for " + player + ": " + e.getMessage());
+        }
+        
+        return records.size() > limit ? records.subList(0, limit) : records;
+    }
+    
     @Override
     public List<RaceRecord> getPlayerCourseTimes(String player, String course) {
-        // This would require a more complex query across all course files
-        // For now, return empty list - can be implemented later if needed
-        return new ArrayList<>();
+        List<RaceRecord> allRecords = loadAllRecords(course);
+        return allRecords.stream()
+                .filter(record -> record.getPlayer().equals(player))
+                .sorted(Comparator.comparingDouble(RaceRecord::getTime))
+                .collect(Collectors.toList());
     }
     
     @Override
     public RaceRecord getPlayerBestTime(String player, String course) {
-        List<RaceRecord> topTimes = getTopTimes(course, 5);
-        return topTimes.stream()
-                .filter(record -> record.getPlayer().equals(player))
-                .findFirst()
-                .orElse(null);
+        List<RaceRecord> playerTimes = getPlayerCourseTimes(player, course);
+        return playerTimes.isEmpty() ? null : playerTimes.get(0);
     }
     
     @Override
     public int getPlayerTotalRaces(String player) {
-        FileConfiguration config = YamlConfiguration.loadConfiguration(playerStatsFile);
-        return config.getInt("players." + player + ".totalRaces", 0);
-    }
-    
-    @Override
-    public int getPlayerRacesByType(String player, CourseType type) {
-        FileConfiguration config = YamlConfiguration.loadConfiguration(playerStatsFile);
-        if (type == CourseType.SINGLEPLAYER) {
-            return config.getInt("players." + player + ".singleplayerRaces", 0);
-        } else if (type == CourseType.MULTIPLAYER) {
-            return config.getInt("players." + player + ".multiplayerRaces", 0);
-        }
-        return 0;
-    }
-    
-    @Override
-    public String getPlayerFavoriteCourse(String player) {
         try {
-            // Count races per course for this player
-            Map<String, Integer> courseCount = new HashMap<>();
-            
-            // Check both singleplayer and multiplayer course folders
-            File spCoursesFolder = new File(plugin.getDataFolder(), "data/singleplayer/courses");
-            File mpCoursesFolder = new File(plugin.getDataFolder(), "data/multiplayer/courses");
-            
-            // Count singleplayer courses
-            if (spCoursesFolder.exists()) {
-                for (File courseFile : spCoursesFolder.listFiles()) {
-                    if (courseFile.getName().endsWith("_records.yml")) {
-                        String courseName = courseFile.getName().replace("_records.yml", "");
-                        int playerRaces = countPlayerRacesInFile(courseFile, player);
-                        if (playerRaces > 0) {
-                            courseCount.put(courseName, courseCount.getOrDefault(courseName, 0) + playerRaces);
-                        }
-                    }
-                }
-            }
-            
-            // Count multiplayer courses
-            if (mpCoursesFolder.exists()) {
-                for (File courseFile : mpCoursesFolder.listFiles()) {
-                    if (courseFile.getName().endsWith("_records.yml")) {
-                        String courseName = courseFile.getName().replace("_records.yml", "");
-                        int playerRaces = countPlayerRacesInFile(courseFile, player);
-                        if (playerRaces > 0) {
-                            courseCount.put(courseName, courseCount.getOrDefault(courseName, 0) + playerRaces);
-                        }
-                    }
-                }
-            }
-            
-            // Find course with most races
-            String favoriteCourse = null;
-            int maxRaces = 0;
-            for (Map.Entry<String, Integer> entry : courseCount.entrySet()) {
-                if (entry.getValue() > maxRaces) {
-                    maxRaces = entry.getValue();
-                    favoriteCourse = entry.getKey();
-                }
-            }
-            
-            return favoriteCourse;
-            
+            FileConfiguration config = YamlConfiguration.loadConfiguration(playerStatsFile);
+            return config.getInt("players." + player + ".totalRaces", 0);
         } catch (Exception e) {
-            plugin.getLogger().warning("Error calculating favorite course for " + player + ": " + e.getMessage());
-            return null;
-        }
-    }
-    
-    private int countPlayerRacesInFile(File courseFile, String player) {
-        try {
-            FileConfiguration config = YamlConfiguration.loadConfiguration(courseFile);
-            int count = 0;
-            
-            if (config.contains("records")) {
-                for (String key : config.getConfigurationSection("records").getKeys(false)) {
-                    String recordPlayer = config.getString("records." + key + ".player");
-                    if (player.equals(recordPlayer)) {
-                        count++;
-                    }
-                }
-            }
-            
-            return count;
-        } catch (Exception e) {
+            plugin.getLogger().warning("Failed to get total races for " + player + ": " + e.getMessage());
             return 0;
         }
     }
     
-    /**
-     * Reset all race records for a specific course
-     */
+    @Override
+    public int getPlayerRacesByType(String player, CourseType type) {
+        try {
+            FileConfiguration config = YamlConfiguration.loadConfiguration(playerStatsFile);
+            if (type == CourseType.SINGLEPLAYER) {
+                return config.getInt("players." + player + ".singleplayerRaces", 0);
+            } else {
+                return config.getInt("players." + player + ".multiplayerRaces", 0);
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("Failed to get races by type for " + player + ": " + e.getMessage());
+            return 0;
+        }
+    }
+    
+    @Override
+    public String getPlayerFavoriteCourse(String player) {
+        // Implementation for finding most raced course
+        // This would require analyzing all records - could be expensive
+        // For now, return null to indicate not implemented
+        return null;
+    }
+    
+    @Override
     public boolean resetCourseRecords(String courseName) {
         try {
-            plugin.debugLog("Resetting course records for: " + courseName);
-            
-            // Create backup before reset
-            createBackup();
-            
-            // Reset singleplayer course records
-            File spCourseFile = new File(singleplayerCoursesDir, courseName + "_records.yml");
-            if (spCourseFile.exists()) {
-                spCourseFile.delete();
-                plugin.debugLog("Deleted singleplayer course records: " + spCourseFile.getName());
+            File courseDir = new File(coursesDir, courseName);
+            if (courseDir.exists()) {
+                // Delete all files in course directory
+                File[] files = courseDir.listFiles();
+                if (files != null) {
+                    for (File file : files) {
+                        if (file.isFile()) {
+                            file.delete();
+                        }
+                    }
+                }
+                courseDir.delete();
             }
             
-            // Reset multiplayer course records
-            File mpCourseFile = new File(multiplayerCoursesDir, courseName + "_records.yml");
-            if (mpCourseFile.exists()) {
-                mpCourseFile.delete();
-                plugin.debugLog("Deleted multiplayer course records: " + mpCourseFile.getName());
-            }
+            // Clear cache
+            leaderboardCache.entrySet().removeIf(entry -> entry.getKey().startsWith(courseName + "_"));
             
-            // Remove course from all player recent races
-            removeCourseFromPlayerRecent(courseName);
-            
-            plugin.debugLog("Successfully reset course records for: " + courseName);
+            plugin.debugLog("Reset all records for course: " + courseName);
             return true;
         } catch (Exception e) {
-            plugin.getLogger().severe("Error resetting course records for " + courseName + ": " + e.getMessage());
+            plugin.getLogger().severe("Failed to reset course records: " + e.getMessage());
             return false;
         }
     }
     
-    /**
-     * Reset all race records for a specific player
-     */
+    @Override
     public boolean resetPlayerRecords(String playerName) {
         try {
-            plugin.debugLog("Resetting player records for: " + playerName);
-            
-            // Create backup before reset
-            createBackup();
-            
-            // Reset singleplayer player stats
+            // Reset player stats
             FileConfiguration statsConfig = YamlConfiguration.loadConfiguration(playerStatsFile);
-            boolean statsModified = false;
-            
-            // Find all player entries that start with the player name (including DQ variants)
-            if (statsConfig.contains("players")) {
-                for (String key : statsConfig.getConfigurationSection("players").getKeys(false)) {
-                    if (key.startsWith(playerName + " ") || key.equals(playerName)) {
-                        statsConfig.set("players." + key, null);
-                        statsModified = true;
-                        plugin.debugLog("Removed player stats entry: " + key);
-                    }
-                }
-            }
-            
-            if (statsModified) {
-                statsConfig.save(playerStatsFile);
-                plugin.debugLog("Reset singleplayer player stats for: " + playerName);
-            }
-            
-            // Reset singleplayer player recent races
-            FileConfiguration recentConfig = YamlConfiguration.loadConfiguration(playerRecentFile);
-            boolean recentModified = false;
-            
-            // Find all player entries that start with the player name (including DQ variants)
-            if (recentConfig.contains("players")) {
-                for (String key : recentConfig.getConfigurationSection("players").getKeys(false)) {
-                    if (key.startsWith(playerName + " ") || key.equals(playerName)) {
-                        recentConfig.set("players." + key, null);
-                        recentModified = true;
-                        plugin.debugLog("Removed player recent entry: " + key);
-                    }
-                }
-            }
-            
-            if (recentModified) {
-                recentConfig.save(playerRecentFile);
-                plugin.debugLog("Reset singleplayer player recent races for: " + playerName);
-            }
-            
-            // Reset multiplayer player stats (if file exists)
-            File multiplayerStatsFile = new File(multiplayerPlayersDir, "player_stats.yml");
-            if (multiplayerStatsFile.exists()) {
-                FileConfiguration mpStatsConfig = YamlConfiguration.loadConfiguration(multiplayerStatsFile);
-                boolean mpStatsModified = false;
-                
-                if (mpStatsConfig.contains("players")) {
-                    for (String key : mpStatsConfig.getConfigurationSection("players").getKeys(false)) {
-                        if (key.startsWith(playerName + " ") || key.equals(playerName)) {
-                            mpStatsConfig.set("players." + key, null);
-                            mpStatsModified = true;
-                            plugin.debugLog("Removed multiplayer player stats entry: " + key);
-                        }
-                    }
-                }
-                
-                if (mpStatsModified) {
-                    mpStatsConfig.save(multiplayerStatsFile);
-                    plugin.debugLog("Reset multiplayer player stats for: " + playerName);
-                }
-            }
-            
-            // Reset multiplayer player recent races (if file exists)
-            File multiplayerRecentFile = new File(multiplayerPlayersDir, "player_recent.yml");
-            if (multiplayerRecentFile.exists()) {
-                FileConfiguration mpRecentConfig = YamlConfiguration.loadConfiguration(multiplayerRecentFile);
-                boolean mpRecentModified = false;
-                
-                if (mpRecentConfig.contains("players")) {
-                    for (String key : mpRecentConfig.getConfigurationSection("players").getKeys(false)) {
-                        if (key.startsWith(playerName + " ") || key.equals(playerName)) {
-                            mpRecentConfig.set("players." + key, null);
-                            mpRecentModified = true;
-                            plugin.debugLog("Removed multiplayer player recent entry: " + key);
-                        }
-                    }
-                }
-                
-                if (mpRecentModified) {
-                    mpRecentConfig.save(multiplayerRecentFile);
-                    plugin.debugLog("Reset multiplayer player recent races for: " + playerName);
-                }
-            }
-            
-            plugin.debugLog("Successfully reset player records for: " + playerName);
-            return true;
-        } catch (Exception e) {
-            plugin.getLogger().severe("Error resetting player records for " + playerName + ": " + e.getMessage());
-            return false;
-        }
-    }
-    
-    /**
-     * Reset ALL race records globally
-     */
-    public boolean resetAllRecords() {
-        try {
-            plugin.debugLog("Resetting ALL race records globally");
-            
-            // Create backup before reset
-            createBackup();
-            
-            // Delete all course record files
-            deleteAllFilesInDirectory(singleplayerCoursesDir);
-            deleteAllFilesInDirectory(multiplayerCoursesDir);
-            
-            // Reset all singleplayer player stats
-            FileConfiguration statsConfig = new YamlConfiguration();
+            statsConfig.set("players." + playerName, null);
             statsConfig.save(playerStatsFile);
             
-            // Reset all singleplayer player recent races
-            FileConfiguration recentConfig = new YamlConfiguration();
+            // Reset player recent
+            FileConfiguration recentConfig = YamlConfiguration.loadConfiguration(playerRecentFile);
+            recentConfig.set("players." + playerName, null);
             recentConfig.save(playerRecentFile);
             
-            // Reset all multiplayer player stats (if file exists)
-            File multiplayerStatsFile = new File(multiplayerPlayersDir, "player_stats.yml");
-            if (multiplayerStatsFile.exists()) {
-                FileConfiguration mpStatsConfig = new YamlConfiguration();
-                mpStatsConfig.save(multiplayerStatsFile);
-                plugin.debugLog("Reset multiplayer player stats file");
-            }
-            
-            // Reset all multiplayer player recent races (if file exists)
-            File multiplayerRecentFile = new File(multiplayerPlayersDir, "player_recent.yml");
-            if (multiplayerRecentFile.exists()) {
-                FileConfiguration mpRecentConfig = new YamlConfiguration();
-                mpRecentConfig.save(multiplayerRecentFile);
-                plugin.debugLog("Reset multiplayer player recent file");
-            }
-            
-            plugin.debugLog("Successfully reset ALL race records globally");
+            plugin.debugLog("Reset all records for player: " + playerName);
             return true;
         } catch (Exception e) {
-            plugin.getLogger().severe("Error resetting global records: " + e.getMessage());
+            plugin.getLogger().severe("Failed to reset player records: " + e.getMessage());
             return false;
         }
     }
     
-    /**
-     * Create a backup of all data files before reset operations
-     */
-    private void createBackup() {
+    @Override
+    public boolean resetAllRecords() {
         try {
-            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
-            File backupDir = new File(plugin.getDataFolder(), "backups/" + timestamp);
-            backupDir.mkdirs();
-            
-            plugin.debugLog("Creating backup at: " + backupDir.getAbsolutePath());
-            
-            // Backup data directory
-            copyDirectory(dataDir, new File(backupDir, "data"));
-            
-            plugin.debugLog("Backup created successfully");
-        } catch (Exception e) {
-            plugin.getLogger().warning("Failed to create backup: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * Remove a course from all player recent race lists
-     */
-    private void removeCourseFromPlayerRecent(String courseName) {
-        try {
-            FileConfiguration recentConfig = YamlConfiguration.loadConfiguration(playerRecentFile);
-            boolean modified = false;
-            
-            for (String playerName : recentConfig.getKeys(false)) {
-                if (recentConfig.isList(playerName)) {
-                    List<Map<String, Object>> playerRaces = (List<Map<String, Object>>) recentConfig.getList(playerName);
-                    if (playerRaces != null) {
-                        List<Map<String, Object>> updatedRaces = new ArrayList<>();
-                        for (Map<String, Object> race : playerRaces) {
-                            if (!courseName.equals(race.get("course"))) {
-                                updatedRaces.add(race);
+            // Delete all course directories
+            if (coursesDir.exists()) {
+                File[] courseDirs = coursesDir.listFiles();
+                if (courseDirs != null) {
+                    for (File courseDir : courseDirs) {
+                        if (courseDir.isDirectory()) {
+                            File[] files = courseDir.listFiles();
+                            if (files != null) {
+                                for (File file : files) {
+                                    file.delete();
+                                }
                             }
-                        }
-                        if (updatedRaces.size() != playerRaces.size()) {
-                            recentConfig.set(playerName, updatedRaces);
-                            modified = true;
+                            courseDir.delete();
                         }
                     }
                 }
             }
             
-            if (modified) {
-                recentConfig.save(playerRecentFile);
-                plugin.debugLog("Removed course '" + courseName + "' from player recent races");
-            }
+            // Reset player data
+            playerStatsFile.delete();
+            playerRecentFile.delete();
+            
+            // Clear cache
+            leaderboardCache.clear();
+            cacheTimestamps.clear();
+            
+            plugin.debugLog("Reset ALL race records");
+            return true;
         } catch (Exception e) {
-            plugin.getLogger().warning("Error removing course from player recent races: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * Delete all files in a directory
-     */
-    private void deleteAllFilesInDirectory(File directory) {
-        if (directory.exists() && directory.isDirectory()) {
-            File[] files = directory.listFiles();
-            if (files != null) {
-                for (File file : files) {
-                    if (file.isFile()) {
-                        file.delete();
-                        plugin.debugLog("Deleted file: " + file.getName());
-                    }
-                }
-            }
-        }
-    }
-    
-    /**
-     * Copy a directory recursively
-     */
-    private void copyDirectory(File source, File destination) throws IOException {
-        if (source.isDirectory()) {
-            if (!destination.exists()) {
-                destination.mkdirs();
-            }
-            
-            String[] files = source.list();
-            if (files != null) {
-                for (String file : files) {
-                    File srcFile = new File(source, file);
-                    File destFile = new File(destination, file);
-                    copyDirectory(srcFile, destFile);
-                }
-            }
-        } else {
-            java.nio.file.Files.copy(source.toPath(), destination.toPath());
+            plugin.getLogger().severe("Failed to reset all records: " + e.getMessage());
+            return false;
         }
     }
 }
