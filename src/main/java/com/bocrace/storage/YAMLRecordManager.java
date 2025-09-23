@@ -440,20 +440,42 @@ public class YAMLRecordManager implements RecordManager {
             // Create backup before reset
             createBackup();
             
-            // Reset player stats
+            // Reset singleplayer player stats
             FileConfiguration statsConfig = YamlConfiguration.loadConfiguration(playerStatsFile);
             if (statsConfig.contains(playerName)) {
                 statsConfig.set(playerName, null);
                 statsConfig.save(playerStatsFile);
-                plugin.debugLog("Reset player stats: " + playerName);
+                plugin.debugLog("Reset singleplayer player stats: " + playerName);
             }
             
-            // Reset player recent races
+            // Reset singleplayer player recent races
             FileConfiguration recentConfig = YamlConfiguration.loadConfiguration(playerRecentFile);
             if (recentConfig.contains(playerName)) {
                 recentConfig.set(playerName, null);
                 recentConfig.save(playerRecentFile);
-                plugin.debugLog("Reset player recent races: " + playerName);
+                plugin.debugLog("Reset singleplayer player recent races: " + playerName);
+            }
+            
+            // Reset multiplayer player stats (if file exists)
+            File multiplayerStatsFile = new File(multiplayerPlayersDir, "player_stats.yml");
+            if (multiplayerStatsFile.exists()) {
+                FileConfiguration mpStatsConfig = YamlConfiguration.loadConfiguration(multiplayerStatsFile);
+                if (mpStatsConfig.contains(playerName)) {
+                    mpStatsConfig.set(playerName, null);
+                    mpStatsConfig.save(multiplayerStatsFile);
+                    plugin.debugLog("Reset multiplayer player stats: " + playerName);
+                }
+            }
+            
+            // Reset multiplayer player recent races (if file exists)
+            File multiplayerRecentFile = new File(multiplayerPlayersDir, "player_recent.yml");
+            if (multiplayerRecentFile.exists()) {
+                FileConfiguration mpRecentConfig = YamlConfiguration.loadConfiguration(multiplayerRecentFile);
+                if (mpRecentConfig.contains(playerName)) {
+                    mpRecentConfig.set(playerName, null);
+                    mpRecentConfig.save(multiplayerRecentFile);
+                    plugin.debugLog("Reset multiplayer player recent races: " + playerName);
+                }
             }
             
             plugin.debugLog("Successfully reset player records for: " + playerName);
@@ -478,13 +500,29 @@ public class YAMLRecordManager implements RecordManager {
             deleteAllFilesInDirectory(singleplayerCoursesDir);
             deleteAllFilesInDirectory(multiplayerCoursesDir);
             
-            // Reset all player stats
+            // Reset all singleplayer player stats
             FileConfiguration statsConfig = new YamlConfiguration();
             statsConfig.save(playerStatsFile);
             
-            // Reset all player recent races
+            // Reset all singleplayer player recent races
             FileConfiguration recentConfig = new YamlConfiguration();
             recentConfig.save(playerRecentFile);
+            
+            // Reset all multiplayer player stats (if file exists)
+            File multiplayerStatsFile = new File(multiplayerPlayersDir, "player_stats.yml");
+            if (multiplayerStatsFile.exists()) {
+                FileConfiguration mpStatsConfig = new YamlConfiguration();
+                mpStatsConfig.save(multiplayerStatsFile);
+                plugin.debugLog("Reset multiplayer player stats file");
+            }
+            
+            // Reset all multiplayer player recent races (if file exists)
+            File multiplayerRecentFile = new File(multiplayerPlayersDir, "player_recent.yml");
+            if (multiplayerRecentFile.exists()) {
+                FileConfiguration mpRecentConfig = new YamlConfiguration();
+                mpRecentConfig.save(multiplayerRecentFile);
+                plugin.debugLog("Reset multiplayer player recent file");
+            }
             
             plugin.debugLog("Successfully reset ALL race records globally");
             return true;

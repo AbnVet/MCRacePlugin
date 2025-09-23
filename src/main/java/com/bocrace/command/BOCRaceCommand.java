@@ -58,12 +58,14 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
                 return handleSingleplayerCommand(sender, args);
             case "multiplayer":
                 return handleMultiplayerCommand(sender, args);
-            case "reset":
+            case "data":
                 if (!sender.hasPermission("bocrace.admin")) {
-                    sender.sendMessage("§cYou don't have permission to use reset commands!");
+                    sender.sendMessage("§cYou don't have permission to use data commands!");
                     return true;
                 }
-                return handleResetCommand(sender, args);
+                return handleDataCommand(sender, args);
+            case "testpapi":
+                return handleTestPAPICommand(sender, args);
             default:
                 sender.sendMessage("§cUnknown command. Use /bocrace help for available commands.");
                 return true;
@@ -173,6 +175,13 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("§d/racestats mytimes <course> §7- Show your times for a specific course");
         sender.sendMessage("§d/racestats stats §7- Show your overall race statistics");
         
+        // Admin Commands (Red)
+        sender.sendMessage("§6Admin Commands:");
+        sender.sendMessage("§c/bocrace data reset course <name> §7- Reset course leaderboard records");
+        sender.sendMessage("§c/bocrace data reset player <name> §7- Reset player statistics & recent races");
+        sender.sendMessage("§c/bocrace data reset global confirm §7- Reset ALL race data (requires confirmation)");
+        sender.sendMessage("§7⚠️ Data reset commands only affect race data, NOT course configurations");
+        
         // Global Commands (Yellow)
         sender.sendMessage("§6Global Commands:");
         sender.sendMessage("§e/bocrace help §7- Show this help menu");
@@ -199,8 +208,8 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         List<String> completions = new ArrayList<>();
         
         if (args.length == 1) {
-            // First level: singleplayer, multiplayer, help, reload, debugcourses
-            List<String> subCommands = Arrays.asList("singleplayer", "multiplayer", "help", "reload", "debugcourses");
+            // First level: singleplayer, multiplayer, help, reload, debugcourses, data, testpapi
+            List<String> subCommands = Arrays.asList("singleplayer", "multiplayer", "help", "reload", "debugcourses", "data", "testpapi");
             for (String subCommand : subCommands) {
                 if (subCommand.toLowerCase().startsWith(args[0].toLowerCase())) {
                     completions.add(subCommand);
@@ -222,6 +231,22 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
                 for (String mpCommand : mpCommands) {
                     if (mpCommand.toLowerCase().startsWith(args[1].toLowerCase())) {
                         completions.add(mpCommand);
+                    }
+                }
+            } else if (firstArg.equals("data")) {
+                // Data subcommands
+                List<String> dataCommands = Arrays.asList("reset", "stats");
+                for (String dataCommand : dataCommands) {
+                    if (dataCommand.toLowerCase().startsWith(args[1].toLowerCase())) {
+                        completions.add(dataCommand);
+                    }
+                }
+            } else if (firstArg.equals("testpapi")) {
+                // TestPAPI subcommands
+                List<String> testpapiCommands = Arrays.asList("list", "test");
+                for (String testpapiCommand : testpapiCommands) {
+                    if (testpapiCommand.toLowerCase().startsWith(args[1].toLowerCase())) {
+                        completions.add(testpapiCommand);
                     }
                 }
             }
@@ -251,6 +276,16 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
                         }
                     }
                 }
+            } else if (firstArg.equals("data")) {
+                if (secondArg.equals("reset")) {
+                    // Add reset subcommands
+                    List<String> resetCommands = Arrays.asList("course", "player", "global");
+                    for (String resetCommand : resetCommands) {
+                        if (resetCommand.toLowerCase().startsWith(args[2].toLowerCase())) {
+                            completions.add(resetCommand);
+                        }
+                    }
+                }
             }
         } else if (args.length == 4) {
             // Fourth argument - setup actions
@@ -275,6 +310,29 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
                 for (String action : mpSetupActions) {
                     if (action.toLowerCase().startsWith(args[3].toLowerCase())) {
                         completions.add(action);
+                    }
+                }
+            } else if (firstArg.equals("data") && secondArg.equals("reset")) {
+                String thirdArg = args[2].toLowerCase();
+                if (thirdArg.equals("course")) {
+                    // Add all course names (both singleplayer and multiplayer)
+                    var allCourses = plugin.getStorageManager().getAllCourses();
+                    for (Course course : allCourses) {
+                        if (course.getName().toLowerCase().startsWith(args[3].toLowerCase())) {
+                            completions.add(course.getName());
+                        }
+                    }
+                } else if (thirdArg.equals("player")) {
+                    // Add online player names
+                    for (Player player : plugin.getServer().getOnlinePlayers()) {
+                        if (player.getName().toLowerCase().startsWith(args[3].toLowerCase())) {
+                            completions.add(player.getName());
+                        }
+                    }
+                } else if (thirdArg.equals("global")) {
+                    // Add "confirm" for global reset
+                    if ("confirm".startsWith(args[3].toLowerCase())) {
+                        completions.add("confirm");
                     }
                 }
             }
@@ -1387,17 +1445,39 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
     /**
      * Handle reset commands
      */
-    private boolean handleResetCommand(CommandSender sender, String[] args) {
+    private boolean handleDataCommand(CommandSender sender, String[] args) {
         if (args.length < 2) {
-            sender.sendMessage("§cUsage: /bocrace reset <course <name>|player <name>|global>");
-            sender.sendMessage("§7- /bocrace reset course <name> - Reset all records for a specific course");
-            sender.sendMessage("§7- /bocrace reset player <name> - Reset all records for a specific player");
-            sender.sendMessage("§7- /bocrace reset global - Reset ALL race records");
-            sender.sendMessage("§c⚠️ WARNING: These commands permanently delete race data!");
+            sender.sendMessage("§cUsage: /bocrace data <reset|stats>");
+            sender.sendMessage("§7- /bocrace data reset - Reset race data (leaderboards, stats, recent races)");
+            sender.sendMessage("§7- /bocrace data stats - Show data statistics (future feature)");
             return true;
         }
         
-        String resetType = args[1].toLowerCase();
+        String dataAction = args[1].toLowerCase();
+        
+        switch (dataAction) {
+            case "reset":
+                return handleDataResetCommand(sender, args);
+            case "stats":
+                return handleDataStatsCommand(sender, args);
+            default:
+                sender.sendMessage("§cInvalid data action. Use: reset or stats");
+                return true;
+        }
+    }
+    
+    private boolean handleDataResetCommand(CommandSender sender, String[] args) {
+        if (args.length < 3) {
+            sender.sendMessage("§cUsage: /bocrace data reset <course|player|global>");
+            sender.sendMessage("§7- /bocrace data reset course <name> - Reset course leaderboard records");
+            sender.sendMessage("§7- /bocrace data reset player <name> - Reset player statistics & recent races");
+            sender.sendMessage("§7- /bocrace data reset global confirm - Reset ALL race data");
+            sender.sendMessage("§c⚠️ WARNING: These commands permanently delete race data!");
+            sender.sendMessage("§a✅ SAFE: Course configurations (buttons, spawns, etc.) are NOT affected");
+            return true;
+        }
+        
+        String resetType = args[2].toLowerCase();
         
         switch (resetType) {
             case "course":
@@ -1412,16 +1492,23 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         }
     }
     
+    private boolean handleDataStatsCommand(CommandSender sender, String[] args) {
+        sender.sendMessage("§6=== BOCRace Data Statistics ===");
+        sender.sendMessage("§eThis command will show comprehensive data statistics in a future update");
+        sender.sendMessage("§7For now, use /racestats to view player statistics");
+        return true;
+    }
+    
     /**
      * Reset all race records for a specific course
      */
     private boolean handleResetCourse(CommandSender sender, String[] args) {
-        if (args.length < 3) {
-            sender.sendMessage("§cUsage: /bocrace reset course <course_name>");
+        if (args.length < 4) {
+            sender.sendMessage("§cUsage: /bocrace data reset course <course_name>");
             return true;
         }
         
-        String courseName = args[2];
+        String courseName = args[3];
         
         // Check if course exists
         Course course = plugin.getStorageManager().getCourse(courseName);
@@ -1460,12 +1547,12 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
      * Reset all race records for a specific player
      */
     private boolean handleResetPlayer(CommandSender sender, String[] args) {
-        if (args.length < 3) {
-            sender.sendMessage("§cUsage: /bocrace reset player <player_name>");
+        if (args.length < 4) {
+            sender.sendMessage("§cUsage: /bocrace data reset player <player_name>");
             return true;
         }
         
-        String playerName = args[2];
+        String playerName = args[3];
         
         try {
             // Create backup before reset
@@ -1498,9 +1585,9 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
      */
     private boolean handleResetGlobal(CommandSender sender, String[] args) {
         // Double confirmation for global reset
-        if (args.length < 3 || !args[2].equals("confirm")) {
+        if (args.length < 4 || !args[3].equals("confirm")) {
             sender.sendMessage("§c⚠️ DANGER: This will reset ALL race records for ALL courses and players!");
-            sender.sendMessage("§cType: /bocrace reset global confirm");
+            sender.sendMessage("§cType: /bocrace data reset global confirm");
             sender.sendMessage("§cThis action cannot be undone!");
             return true;
         }
@@ -1529,6 +1616,78 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         }
         
         return true;
+    }
+    
+    /**
+     * Handle PlaceholderAPI test command
+     */
+    private boolean handleTestPAPICommand(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("§cThis command can only be used by players!");
+            return true;
+        }
+        
+        Player player = (Player) sender;
+        
+        if (args.length < 2) {
+            sender.sendMessage("§ePlaceholderAPI Test Commands:");
+            sender.sendMessage("§6/bocrace testpapi list §7- List all available placeholders");
+            sender.sendMessage("§6/bocrace testpapi test <placeholder> §7- Test a specific placeholder");
+            return true;
+        }
+        
+        String subCommand = args[1].toLowerCase();
+        
+        switch (subCommand) {
+            case "list":
+                sender.sendMessage("§e=== Available BOCRace Placeholders ===");
+                sender.sendMessage("§6Player Placeholders:");
+                sender.sendMessage("§7%bocrace_player_status%");
+                sender.sendMessage("§7%bocrace_player_current_time%");
+                sender.sendMessage("§7%bocrace_player_course%");
+                sender.sendMessage("§7%bocrace_player_races_completed%");
+                sender.sendMessage("§7%bocrace_player_pb_<course>%");
+                sender.sendMessage("§6Course Placeholders:");
+                sender.sendMessage("§7%bocrace_course_<course>_status%");
+                sender.sendMessage("§7%bocrace_course_<course>_record%");
+                sender.sendMessage("§7%bocrace_course_<course>_record_time%");
+                sender.sendMessage("§6Leaderboard Placeholders:");
+                sender.sendMessage("§7%bocrace_leaderboard_<course>_name_<position>%");
+                sender.sendMessage("§7%bocrace_leaderboard_<course>_time_<position>%");
+                sender.sendMessage("§6Global Placeholders:");
+                sender.sendMessage("§7%bocrace_total_courses%");
+                sender.sendMessage("§7%bocrace_active_races%");
+                return true;
+                
+            case "test":
+                if (args.length < 3) {
+                    sender.sendMessage("§cUsage: /bocrace testpapi test <placeholder>");
+                    return true;
+                }
+                
+                String placeholder = args[2];
+                if (!placeholder.startsWith("%bocrace_") || !placeholder.endsWith("%")) {
+                    sender.sendMessage("§cPlaceholder must start with %bocrace_ and end with %");
+                    return true;
+                }
+                
+                // Test the placeholder using PlaceholderAPI
+                String result = me.clip.placeholderapi.PlaceholderAPI.setPlaceholders(player, placeholder);
+                sender.sendMessage("§ePlaceholder Test:");
+                sender.sendMessage("§7Input: §f" + placeholder);
+                sender.sendMessage("§7Output: §f" + result);
+                
+                if (result.equals(placeholder)) {
+                    sender.sendMessage("§c⚠️ Placeholder not resolved - check format and course name");
+                } else {
+                    sender.sendMessage("§a✅ Placeholder working correctly!");
+                }
+                return true;
+                
+            default:
+                sender.sendMessage("§cUnknown test command. Use /bocrace testpapi list");
+                return true;
+        }
     }
     
     /**
