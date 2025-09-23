@@ -442,28 +442,63 @@ public class YAMLRecordManager implements RecordManager {
             
             // Reset singleplayer player stats
             FileConfiguration statsConfig = YamlConfiguration.loadConfiguration(playerStatsFile);
-            if (statsConfig.contains(playerName)) {
-                statsConfig.set(playerName, null);
+            boolean statsModified = false;
+            
+            // Find all player entries that start with the player name (including DQ variants)
+            if (statsConfig.contains("players")) {
+                for (String key : statsConfig.getConfigurationSection("players").getKeys(false)) {
+                    if (key.startsWith(playerName + " ") || key.equals(playerName)) {
+                        statsConfig.set("players." + key, null);
+                        statsModified = true;
+                        plugin.debugLog("Removed player stats entry: " + key);
+                    }
+                }
+            }
+            
+            if (statsModified) {
                 statsConfig.save(playerStatsFile);
-                plugin.debugLog("Reset singleplayer player stats: " + playerName);
+                plugin.debugLog("Reset singleplayer player stats for: " + playerName);
             }
             
             // Reset singleplayer player recent races
             FileConfiguration recentConfig = YamlConfiguration.loadConfiguration(playerRecentFile);
-            if (recentConfig.contains(playerName)) {
-                recentConfig.set(playerName, null);
+            boolean recentModified = false;
+            
+            // Find all player entries that start with the player name (including DQ variants)
+            if (recentConfig.contains("players")) {
+                for (String key : recentConfig.getConfigurationSection("players").getKeys(false)) {
+                    if (key.startsWith(playerName + " ") || key.equals(playerName)) {
+                        recentConfig.set("players." + key, null);
+                        recentModified = true;
+                        plugin.debugLog("Removed player recent entry: " + key);
+                    }
+                }
+            }
+            
+            if (recentModified) {
                 recentConfig.save(playerRecentFile);
-                plugin.debugLog("Reset singleplayer player recent races: " + playerName);
+                plugin.debugLog("Reset singleplayer player recent races for: " + playerName);
             }
             
             // Reset multiplayer player stats (if file exists)
             File multiplayerStatsFile = new File(multiplayerPlayersDir, "player_stats.yml");
             if (multiplayerStatsFile.exists()) {
                 FileConfiguration mpStatsConfig = YamlConfiguration.loadConfiguration(multiplayerStatsFile);
-                if (mpStatsConfig.contains(playerName)) {
-                    mpStatsConfig.set(playerName, null);
+                boolean mpStatsModified = false;
+                
+                if (mpStatsConfig.contains("players")) {
+                    for (String key : mpStatsConfig.getConfigurationSection("players").getKeys(false)) {
+                        if (key.startsWith(playerName + " ") || key.equals(playerName)) {
+                            mpStatsConfig.set("players." + key, null);
+                            mpStatsModified = true;
+                            plugin.debugLog("Removed multiplayer player stats entry: " + key);
+                        }
+                    }
+                }
+                
+                if (mpStatsModified) {
                     mpStatsConfig.save(multiplayerStatsFile);
-                    plugin.debugLog("Reset multiplayer player stats: " + playerName);
+                    plugin.debugLog("Reset multiplayer player stats for: " + playerName);
                 }
             }
             
@@ -471,10 +506,21 @@ public class YAMLRecordManager implements RecordManager {
             File multiplayerRecentFile = new File(multiplayerPlayersDir, "player_recent.yml");
             if (multiplayerRecentFile.exists()) {
                 FileConfiguration mpRecentConfig = YamlConfiguration.loadConfiguration(multiplayerRecentFile);
-                if (mpRecentConfig.contains(playerName)) {
-                    mpRecentConfig.set(playerName, null);
+                boolean mpRecentModified = false;
+                
+                if (mpRecentConfig.contains("players")) {
+                    for (String key : mpRecentConfig.getConfigurationSection("players").getKeys(false)) {
+                        if (key.startsWith(playerName + " ") || key.equals(playerName)) {
+                            mpRecentConfig.set("players." + key, null);
+                            mpRecentModified = true;
+                            plugin.debugLog("Removed multiplayer player recent entry: " + key);
+                        }
+                    }
+                }
+                
+                if (mpRecentModified) {
                     mpRecentConfig.save(multiplayerRecentFile);
-                    plugin.debugLog("Reset multiplayer player recent races: " + playerName);
+                    plugin.debugLog("Reset multiplayer player recent races for: " + playerName);
                 }
             }
             
