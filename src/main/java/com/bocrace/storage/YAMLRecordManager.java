@@ -90,14 +90,18 @@ public class YAMLRecordManager implements RecordManager {
     
     @Override
     public void saveRaceRecord(String player, String course, double time, CourseType type) {
-        plugin.debugLog("Saving race record: " + player + " - " + course + " - " + time + "s - " + type);
+        saveRaceRecord(player, course, time, type, LocalDateTime.now());
+    }
+    
+    public void saveRaceRecord(String player, String course, double time, CourseType type, LocalDateTime date) {
+        plugin.debugLog("Saving race record: " + player + " - " + course + " - " + time + "s - " + type + " - " + date);
         
         try {
             // Save to course-specific records file
-            saveToCourseRecords(player, course, time, type);
+            saveToCourseRecords(player, course, time, type, date);
             
             // Update player recent races
-            updatePlayerRecent(player, course, time, type);
+            updatePlayerRecent(player, course, time, type, date);
             
             // Update player stats
             updatePlayerStats(player, type);
@@ -110,6 +114,10 @@ public class YAMLRecordManager implements RecordManager {
     }
     
     private void saveToCourseRecords(String player, String course, double time, CourseType type) throws IOException {
+        saveToCourseRecords(player, course, time, type, LocalDateTime.now());
+    }
+    
+    private void saveToCourseRecords(String player, String course, double time, CourseType type, LocalDateTime date) throws IOException {
         // Determine which courses directory to use based on type
         File coursesDir = (type == CourseType.SINGLEPLAYER) ? singleplayerCoursesDir : multiplayerCoursesDir;
         File courseFile = new File(coursesDir, course + "_records.yml");
@@ -134,14 +142,29 @@ public class YAMLRecordManager implements RecordManager {
         Map<String, Object> newRecord = new HashMap<>();
         newRecord.put("player", player);
         newRecord.put("time", time);
-        newRecord.put("date", LocalDateTime.now().format(dateFormatter));
+        newRecord.put("date", date.format(dateFormatter));
         newRecord.put("type", type.toString());
         records.add(newRecord);
         
-        // Sort by time (best first) and keep only top 5
+        // Sort by time (best first) and keep only top 10
         records.sort((a, b) -> Double.compare((Double) a.get("time"), (Double) b.get("time")));
-        if (records.size() > 5) {
-            records = records.subList(0, 5);
+        
+        // ONE RECORD PER PLAYER RULE - Keep only the fastest time per player
+        Map<String, Map<String, Object>> bestPerPlayer = new HashMap<>();
+        for (Map<String, Object> record : records) {
+            String player = (String) record.get("player");
+            if (!bestPerPlayer.containsKey(player)) {
+                bestPerPlayer.put(player, record);
+            }
+        }
+        
+        // Convert back to list and sort by time
+        records = new ArrayList<>(bestPerPlayer.values());
+        records.sort((a, b) -> Double.compare((Double) a.get("time"), (Double) b.get("time")));
+        
+        // Keep only top 10
+        if (records.size() > 10) {
+            records = records.subList(0, 10);
         }
         
         // Save back to file
@@ -160,6 +183,10 @@ public class YAMLRecordManager implements RecordManager {
     }
     
     private void updatePlayerRecent(String player, String course, double time, CourseType type) throws IOException {
+        updatePlayerRecent(player, course, time, type, LocalDateTime.now());
+    }
+    
+    private void updatePlayerRecent(String player, String course, double time, CourseType type, LocalDateTime date) throws IOException {
         FileConfiguration config = YamlConfiguration.loadConfiguration(playerRecentFile);
         
         // Get existing recent races
@@ -179,7 +206,7 @@ public class YAMLRecordManager implements RecordManager {
         Map<String, Object> newRecord = new HashMap<>();
         newRecord.put("course", course);
         newRecord.put("time", time);
-        newRecord.put("date", LocalDateTime.now().format(dateFormatter));
+        newRecord.put("date", date.format(dateFormatter));
         newRecord.put("type", type.toString());
         recent.add(0, newRecord);
         

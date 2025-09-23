@@ -3,6 +3,7 @@ package com.bocrace.storage;
 import com.bocrace.model.RaceRecord;
 import com.bocrace.model.CourseType;
 import com.bocrace.model.Period;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -19,6 +20,16 @@ public interface RecordManager {
      * @param type Course type (SINGLEPLAYER/MULTIPLAYER)
      */
     void saveRaceRecord(String player, String course, double time, CourseType type);
+    
+    /**
+     * Save a race record with a specific date
+     * @param player Player name
+     * @param course Course name
+     * @param time Race time in seconds
+     * @param type Course type (SINGLEPLAYER/MULTIPLAYER)
+     * @param date Specific date for the record
+     */
+    void saveRaceRecord(String player, String course, double time, CourseType type, LocalDateTime date);
     
     /**
      * Get top times for a specific course
