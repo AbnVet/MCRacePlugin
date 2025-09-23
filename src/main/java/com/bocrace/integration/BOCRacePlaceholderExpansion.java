@@ -249,14 +249,14 @@ public class BOCRacePlaceholderExpansion extends PlaceholderExpansion {
         if (course == null) return "Not Found";
         
         if (plugin.getRaceManager().isCourseOccupied(courseName)) {
-            return "In Use";
+            return "<light_purple>In Use";
         }
         
         // Check if someone is in setup mode for this course
         boolean inSetup = plugin.getPlayerSetupModes().values().stream()
             .anyMatch(mode -> mode.getCourseName().equals(courseName));
         
-        return inSetup ? "Setup Mode" : "Available";
+        return inSetup ? "<red>Setup" : "<green>Open";
     }
     
     private String getCourseRecord(String courseName) {
@@ -425,7 +425,7 @@ public class BOCRacePlaceholderExpansion extends PlaceholderExpansion {
                 if (plugin.getConfigManager().isDebugEnabled()) {
                     plugin.getLogger().info("[DEBUG] No entry found for position " + pos);
                 }
-                return "No Entry";
+                return "N/A";
             } catch (NumberFormatException e) {
                 if (plugin.getConfigManager().isDebugEnabled()) {
                     plugin.getLogger().warning("[DEBUG] Invalid position in leaderboard placeholder: " + position);
@@ -472,7 +472,7 @@ public class BOCRacePlaceholderExpansion extends PlaceholderExpansion {
                 if (plugin.getConfigManager().isDebugEnabled()) {
                     plugin.getLogger().info("[DEBUG] No entry found for position " + pos);
                 }
-                return "No Entry";
+                return "N/A";
             } catch (NumberFormatException e) {
                 if (plugin.getConfigManager().isDebugEnabled()) {
                     plugin.getLogger().warning("[DEBUG] Invalid position in original leaderboard placeholder: " + position);
@@ -683,16 +683,18 @@ public class BOCRacePlaceholderExpansion extends PlaceholderExpansion {
     
     // Utility methods for formatting
     private String formatTime(long timeMs) {
-        if (timeMs <= 0) return "0.000";
+        if (timeMs <= 0) return "0.00";
         
         long minutes = timeMs / 60000;
         long seconds = (timeMs % 60000) / 1000;
         long milliseconds = timeMs % 1000;
         
         if (minutes > 0) {
-            return String.format("%d:%02d.%03d", minutes, seconds, milliseconds);
+            // For times over 1 minute, show MM:SS format (no decimals)
+            return String.format("%d:%02d", minutes, seconds);
         } else {
-            return String.format("%d.%03d", seconds, milliseconds);
+            // For times under 1 minute, show 2 decimal places
+            return String.format("%d.%02d", seconds, milliseconds / 10);
         }
     }
     
