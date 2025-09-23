@@ -10,6 +10,7 @@ com\bocrace\race\ActiveRace.class
 com\bocrace\model\CourseType.class
 com\bocrace\listener\RaceLineListener.class
 com\bocrace\listener\StartButtonListener$1.class
+com\bocrace\model\Period.class
 com\bocrace\race\MultiplayerRaceManager.class
 com\bocrace\util\TeleportUtil.class
 com\bocrace\BOCRacePlugin.class
@@ -25,6 +26,7 @@ com\bocrace\race\RaceManager.class
 com\bocrace\util\BoatManager$1.class
 com\bocrace\race\MultiplayerRace.class
 com\bocrace\listener\RaceProtectionListener.class
+com\bocrace\storage\YAMLRecordManager$1.class
 com\bocrace\listener\MultiplayerButtonListener.class
 com\bocrace\race\MultiplayerRaceManager$1.class
 com\bocrace\command\BOCRaceCommand.class

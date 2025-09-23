@@ -28,6 +28,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.List;
+import java.io.File;
 
 public class BOCRacePlugin extends JavaPlugin {
 
@@ -98,6 +100,9 @@ public class BOCRacePlugin extends JavaPlugin {
         if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
             new BOCRacePlaceholderExpansion(this).register();
             getLogger().info("PlaceholderAPI expansion registered successfully!");
+            
+            // Generate placeholder reference file
+            generatePlaceholderReferenceFile();
         } else {
             getLogger().warning("PlaceholderAPI not found! Placeholder support disabled.");
         }
@@ -277,6 +282,150 @@ public class BOCRacePlugin extends JavaPlugin {
         public boolean isExpired() {
             // 30 second timeout
             return System.currentTimeMillis() - timestamp > 30000;
+        }
+    }
+    
+    /**
+     * Generate the placeholders_api.yml reference file
+     */
+    private void generatePlaceholderReferenceFile() {
+        try {
+            File placeholderFile = new File(getDataFolder(), "placeholders_api.yml");
+            
+            StringBuilder content = new StringBuilder();
+            content.append("# BOCRacePlugin PlaceholderAPI Reference\n");
+            content.append("# This file is auto-generated on server start\n");
+            content.append("# Copy and paste these placeholders into your holograms/plugins\n\n");
+            
+            // Get actual course names for examples
+            List<String> courseNames = storageManager.getAllCourses().stream()
+                .map(Course::getName)
+                .collect(java.util.stream.Collectors.toList());
+            
+            String exampleCourse = courseNames.isEmpty() ? "YourCourseName" : courseNames.get(0);
+            
+            content.append("# ==========================================\n");
+            content.append("# COURSE STATUS PLACEHOLDERS\n");
+            content.append("# ==========================================\n");
+            content.append("course_status: \"").append("%bocrace_course_").append(exampleCourse).append("_status%\"\n");
+            content.append("# Returns: §2Open, §5In Use, or §4Setup\n\n");
+            
+            content.append("# ==========================================\n");
+            content.append("# COURSE RECORD PLACEHOLDERS\n");
+            content.append("# ==========================================\n");
+            content.append("course_record_holder: \"").append("%bocrace_course_").append(exampleCourse).append("_record%\"\n");
+            content.append("course_record_time: \"").append("%bocrace_course_").append(exampleCourse).append("_record_time%\"\n");
+            content.append("course_usage_count: \"").append("%bocrace_course_").append(exampleCourse).append("_usage%\"\n\n");
+            
+            content.append("# ==========================================\n");
+            content.append("# STANDARD LEADERBOARD PLACEHOLDERS\n");
+            content.append("# ==========================================\n");
+            content.append("leaderboard_name_1: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_name_1%\"\n");
+            content.append("leaderboard_time_1: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_time_1%\"\n");
+            content.append("leaderboard_name_2: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_name_2%\"\n");
+            content.append("leaderboard_time_2: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_time_2%\"\n");
+            content.append("leaderboard_name_3: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_name_3%\"\n");
+            content.append("leaderboard_time_3: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_time_3%\"\n");
+            content.append("leaderboard_name_4: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_name_4%\"\n");
+            content.append("leaderboard_time_4: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_time_4%\"\n");
+            content.append("leaderboard_name_5: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_name_5%\"\n");
+            content.append("leaderboard_time_5: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_time_5%\"\n\n");
+            
+            content.append("# ==========================================\n");
+            content.append("# DAILY LEADERBOARD PLACEHOLDERS (Today's Records)\n");
+            content.append("# ==========================================\n");
+            content.append("daily_name_1: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_daily_name_1%\"\n");
+            content.append("daily_time_1: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_daily_time_1%\"\n");
+            content.append("daily_name_2: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_daily_name_2%\"\n");
+            content.append("daily_time_2: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_daily_time_2%\"\n");
+            content.append("daily_name_3: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_daily_name_3%\"\n");
+            content.append("daily_time_3: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_daily_time_3%\"\n\n");
+            
+            content.append("# ==========================================\n");
+            content.append("# WEEKLY LEADERBOARD PLACEHOLDERS (Last 7 Days)\n");
+            content.append("# ==========================================\n");
+            content.append("weekly_name_1: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_weekly_name_1%\"\n");
+            content.append("weekly_time_1: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_weekly_time_1%\"\n");
+            content.append("weekly_name_2: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_weekly_name_2%\"\n");
+            content.append("weekly_time_2: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_weekly_time_2%\"\n");
+            content.append("weekly_name_3: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_weekly_name_3%\"\n");
+            content.append("weekly_time_3: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_weekly_time_3%\"\n\n");
+            
+            content.append("# ==========================================\n");
+            content.append("# MONTHLY LEADERBOARD PLACEHOLDERS (Current Month)\n");
+            content.append("# ==========================================\n");
+            content.append("monthly_name_1: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_monthly_name_1%\"\n");
+            content.append("monthly_time_1: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_monthly_time_1%\"\n");
+            content.append("monthly_name_2: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_monthly_name_2%\"\n");
+            content.append("monthly_time_2: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_monthly_time_2%\"\n");
+            content.append("monthly_name_3: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_monthly_name_3%\"\n");
+            content.append("monthly_time_3: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_monthly_time_3%\"\n\n");
+            
+            content.append("# ==========================================\n");
+            content.append("# PLAYER STATUS PLACEHOLDERS\n");
+            content.append("# ==========================================\n");
+            content.append("player_status: \"%bocrace_player_status%\"\n");
+            content.append("player_current_time: \"%bocrace_player_current_time%\"\n");
+            content.append("player_current_course: \"%bocrace_player_course%\"\n");
+            content.append("player_races_completed: \"%bocrace_player_races_completed%\"\n");
+            content.append("player_pb: \"").append("%bocrace_player_pb_").append(exampleCourse).append("%\"\n\n");
+            
+            content.append("# ==========================================\n");
+            content.append("# MULTIPLAYER RACE PLACEHOLDERS\n");
+            content.append("# ==========================================\n");
+            content.append("mp_players_joined: \"%bocrace_mp_players_joined%\"\n");
+            content.append("mp_race_status: \"%bocrace_mp_race_status%\"\n");
+            content.append("mp_leader: \"%bocrace_mp_leader%\"\n");
+            content.append("mp_leader_time: \"%bocrace_mp_leader_time%\"\n\n");
+            
+            content.append("# ==========================================\n");
+            content.append("# GLOBAL STATISTICS PLACEHOLDERS\n");
+            content.append("# ==========================================\n");
+            content.append("total_courses: \"%bocrace_total_courses%\"\n");
+            content.append("active_races: \"%bocrace_active_races%\"\n");
+            content.append("active_mp_races: \"%bocrace_active_mp_races%\"\n\n");
+            
+            content.append("# ==========================================\n");
+            content.append("# COLOR CODES REFERENCE\n");
+            content.append("# ==========================================\n");
+            content.append("# §2 = Green (Open status)\n");
+            content.append("# §5 = Purple (In Use status)\n");
+            content.append("# §4 = Red (Setup status)\n");
+            content.append("# §f = White (default text)\n");
+            content.append("# §7 = Gray (secondary text)\n\n");
+            
+            content.append("# ==========================================\n");
+            content.append("# TIME FORMATTING\n");
+            content.append("# ==========================================\n");
+            content.append("# Under 1 minute: 12.80 (2 decimal places)\n");
+            content.append("# Over 1 minute: 1:35 (MM:SS format, no decimals)\n");
+            content.append("# No data: N/A\n\n");
+            
+            content.append("# ==========================================\n");
+            content.append("# INSTRUCTIONS\n");
+            content.append("# ==========================================\n");
+            content.append("# 1. Replace ").append(exampleCourse).append(" with your actual course names\n");
+            content.append("# 2. Copy the placeholder you need (including the % symbols)\n");
+            content.append("# 3. Paste into your hologram/plugin configuration\n");
+            content.append("# 4. Test with: /bocrace testpapi test <placeholder>\n");
+            content.append("# 5. Generate test data with: /bocrace test-leaderboards <course>\n\n");
+            
+            if (!courseNames.isEmpty()) {
+                content.append("# ==========================================\n");
+                content.append("# YOUR ACTUAL COURSE NAMES\n");
+                content.append("# ==========================================\n");
+                for (String courseName : courseNames) {
+                    content.append("# ").append(courseName).append("\n");
+                }
+                content.append("\n");
+            }
+            
+            // Write the file
+            java.nio.file.Files.write(placeholderFile.toPath(), content.toString().getBytes());
+            getLogger().info("PlaceholderAPI reference file generated: placeholders_api.yml");
+            
+        } catch (Exception e) {
+            getLogger().warning("Failed to generate placeholder reference file: " + e.getMessage());
         }
     }
 }

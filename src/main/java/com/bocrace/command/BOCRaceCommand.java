@@ -12,6 +12,7 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import java.util.stream.Collectors;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -66,6 +67,12 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
                 return handleDataCommand(sender, args);
             case "testpapi":
                 return handleTestPAPICommand(sender, args);
+            case "test-leaderboards":
+                if (!sender.hasPermission("bocrace.admin")) {
+                    sender.sendMessage("§cYou don't have permission to use test commands!");
+                    return true;
+                }
+                return handleTestLeaderboardsCommand(sender, args);
             default:
                 sender.sendMessage("§cUnknown command. Use /bocrace help for available commands.");
                 return true;
@@ -208,8 +215,8 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         List<String> completions = new ArrayList<>();
         
         if (args.length == 1) {
-            // First level: singleplayer, multiplayer, help, reload, debugcourses, data, testpapi
-            List<String> subCommands = Arrays.asList("singleplayer", "multiplayer", "help", "reload", "debugcourses", "data", "testpapi");
+            // First level: singleplayer, multiplayer, help, reload, debugcourses, data, testpapi, test-leaderboards
+            List<String> subCommands = Arrays.asList("singleplayer", "multiplayer", "help", "reload", "debugcourses", "data", "testpapi", "test-leaderboards");
             for (String subCommand : subCommands) {
                 if (subCommand.toLowerCase().startsWith(args[0].toLowerCase())) {
                     completions.add(subCommand);
@@ -247,6 +254,16 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
                 for (String testpapiCommand : testpapiCommands) {
                     if (testpapiCommand.toLowerCase().startsWith(args[1].toLowerCase())) {
                         completions.add(testpapiCommand);
+                    }
+                }
+            } else if (firstArg.equals("test-leaderboards")) {
+                // Test-leaderboards needs course name as second argument
+                List<String> courseNames = plugin.getStorageManager().getAllCourses().stream()
+                    .map(Course::getName)
+                    .collect(Collectors.toList());
+                for (String courseName : courseNames) {
+                    if (courseName.toLowerCase().startsWith(args[1].toLowerCase())) {
+                        completions.add(courseName);
                     }
                 }
             }
@@ -1631,8 +1648,9 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         
         if (args.length < 2) {
             sender.sendMessage("§ePlaceholderAPI Test Commands:");
-            sender.sendMessage("§6/bocrace testpapi list §7- List all available placeholders");
-            sender.sendMessage("§6/bocrace testpapi test <placeholder> §7- Test a specific placeholder");
+        sender.sendMessage("§6/bocrace testpapi list §7- List all available placeholders");
+        sender.sendMessage("§6/bocrace testpapi test <placeholder> §7- Test a specific placeholder");
+        sender.sendMessage("§6/bocrace test-leaderboards <course> §7- Generate test data for period leaderboards");
             return true;
         }
         
@@ -1689,6 +1707,78 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
                 return true;
         }
     }
+    
+    private boolean handleTestLeaderboardsCommand(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage("§cUsage: /bocrace test-leaderboards <coursename>");
+            sender.sendMessage("§7This command generates test data for daily/weekly/monthly leaderboards");
+            return true;
+        }
+        
+        String courseName = args[1];
+        Course course = plugin.getStorageManager().getCourse(courseName);
+        
+        if (course == null) {
+            sender.sendMessage("§cCourse '" + courseName + "' not found!");
+            sender.sendMessage("§7Available courses: " + plugin.getStorageManager().getAllCourses().stream()
+                .map(Course::getName)
+                .collect(Collectors.joining(", ")));
+            return true;
+        }
+        
+        sender.sendMessage("§6=== Generating Test Data for '" + courseName + "' ===");
+        sender.sendMessage("§7This will create 50+ race records across 30 days with 5 different players...");
+        
+        // Generate test data
+        generateTestLeaderboardData(courseName);
+        
+        sender.sendMessage("§a✅ Test data generated successfully!");
+        sender.sendMessage("§eYou can now test the period leaderboard placeholders:");
+        sender.sendMessage("§7Daily: %bocrace_leaderboard_" + courseName + "_daily_name_1%");
+        sender.sendMessage("§7Weekly: %bocrace_leaderboard_" + courseName + "_weekly_name_1%");
+        sender.sendMessage("§7Monthly: %bocrace_leaderboard_" + courseName + "_monthly_name_1%");
+        sender.sendMessage("§c⚠️ Remember to reset data when done testing!");
+        
+        return true;
+    }
+    
+    private void generateTestLeaderboardData(String courseName) {
+        String[] testPlayers = {"TestPlayer1", "TestPlayer2", "TestPlayer3", "TestPlayer4", "TestPlayer5"};
+        
+        // Time ranges for each player (in seconds)
+        double[] baseTimes = {12.5, 14.2, 16.8, 19.5, 22.1};
+        
+        plugin.debugLog("Generating test leaderboard data for course: " + courseName);
+        
+        for (int day = 0; day < 30; day++) {
+            for (int playerIndex = 0; playerIndex < testPlayers.length; playerIndex++) {
+                String player = testPlayers[playerIndex];
+                
+                // Generate 1-3 races per player per day
+                int racesToday = (int) (Math.random() * 3) + 1;
+                
+                for (int race = 0; race < racesToday; race++) {
+                    // Add some randomness to base time
+                    double timeVariation = (Math.random() - 0.5) * 2.0; // ±1 second
+                    double raceTime = baseTimes[playerIndex] + timeVariation;
+                    
+                    // Ensure positive time
+                    if (raceTime < 5.0) raceTime = 5.0;
+                    
+                    // Create record with date from 'day' days ago
+                    java.time.LocalDateTime recordDate = java.time.LocalDateTime.now().minusDays(day);
+                    
+                    // Save the record
+                    plugin.getRecordManager().saveRaceRecord(player, courseName, raceTime, CourseType.SINGLEPLAYER);
+                    
+                    plugin.debugLog("Generated record: " + player + " - " + raceTime + "s on " + recordDate.toLocalDate());
+                }
+            }
+        }
+        
+        plugin.debugLog("Test data generation complete - 30 days of records created");
+    }
+    
     
     /**
      * Format timestamp for display

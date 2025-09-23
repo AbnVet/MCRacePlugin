@@ -2,6 +2,7 @@ package com.bocrace.storage;
 
 import com.bocrace.model.RaceRecord;
 import com.bocrace.model.CourseType;
+import com.bocrace.model.Period;
 import java.util.List;
 
 /**
@@ -26,6 +27,15 @@ public interface RecordManager {
      * @return List of race records sorted by time (best first)
      */
     List<RaceRecord> getTopTimes(String course, int limit);
+    
+    /**
+     * Get top times for a specific course within a time period
+     * @param course Course name
+     * @param period Time period (DAILY, WEEKLY, MONTHLY)
+     * @param limit Maximum number of records to return
+     * @return List of race records sorted by time (best first) within the period
+     */
+    List<RaceRecord> getTopTimesForPeriod(String course, Period period, int limit);
     
     /**
      * Get player's recent races across all courses

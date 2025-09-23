@@ -3,6 +3,7 @@ package com.bocrace.integration;
 import com.bocrace.BOCRacePlugin;
 import com.bocrace.model.Course;
 import com.bocrace.model.RaceRecord;
+import com.bocrace.model.Period;
 import com.bocrace.race.ActiveRace;
 import com.bocrace.race.MultiplayerRace;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
@@ -93,6 +94,11 @@ public class BOCRacePlaceholderExpansion extends PlaceholderExpansion {
             return handleLeaderboardPlaceholder(params);
         }
         
+        // Period-based leaderboard placeholders: leaderboard_<course>_<period>_name_<position> or leaderboard_<course>_<period>_time_<position>
+        if (params.startsWith("leaderboard_") && (params.contains("_daily_") || params.contains("_weekly_") || params.contains("_monthly_"))) {
+            return handlePeriodLeaderboardPlaceholder(params);
+        }
+        
         // Global statistics
         switch (params.toLowerCase()) {
             case "total_courses":
@@ -164,6 +170,11 @@ public class BOCRacePlaceholderExpansion extends PlaceholderExpansion {
         // Leaderboard placeholders: leaderboard_<course>_<position> (also handle in player context)
         if (params.startsWith("leaderboard_")) {
             return handleLeaderboardPlaceholder(params);
+        }
+        
+        // Period-based leaderboard placeholders: leaderboard_<course>_<period>_name_<position> or leaderboard_<course>_<period>_time_<position> (also handle in player context)
+        if (params.startsWith("leaderboard_") && (params.contains("_daily_") || params.contains("_weekly_") || params.contains("_monthly_"))) {
+            return handlePeriodLeaderboardPlaceholder(params);
         }
         
         // DQ-related placeholders
@@ -249,14 +260,14 @@ public class BOCRacePlaceholderExpansion extends PlaceholderExpansion {
         if (course == null) return "Not Found";
         
         if (plugin.getRaceManager().isCourseOccupied(courseName)) {
-            return "<light_purple>In Use";
+            return "§5In Use";
         }
         
         // Check if someone is in setup mode for this course
         boolean inSetup = plugin.getPlayerSetupModes().values().stream()
             .anyMatch(mode -> mode.getCourseName().equals(courseName));
         
-        return inSetup ? "<red>Setup" : "<green>Open";
+        return inSetup ? "§4Setup" : "§2Open";
     }
     
     private String getCourseRecord(String courseName) {
@@ -488,6 +499,78 @@ public class BOCRacePlaceholderExpansion extends PlaceholderExpansion {
         
         if (plugin.getConfigManager().isDebugEnabled()) {
             plugin.getLogger().warning("[DEBUG] Invalid original leaderboard placeholder format: " + params);
+        }
+        return "Invalid Format";
+    }
+    
+    /**
+     * Handle period-based leaderboard placeholders (daily/weekly/monthly)
+     * Format: leaderboard_<course>_<period>_name_<position> or leaderboard_<course>_<period>_time_<position>
+     */
+    private String handlePeriodLeaderboardPlaceholder(String params) {
+        if (plugin.getConfigManager().isDebugEnabled()) {
+            plugin.getLogger().info("[DEBUG] Period leaderboard placeholder requested: " + params);
+        }
+        
+        String[] parts = params.split("_");
+        if (parts.length >= 5) {
+            String position = parts[parts.length - 1];
+            String type = parts[parts.length - 2]; // "name" or "time"
+            String periodStr = parts[parts.length - 3]; // "daily", "weekly", or "monthly"
+            String courseName = String.join("_", java.util.Arrays.copyOfRange(parts, 1, parts.length - 3));
+            
+            try {
+                int pos = Integer.parseInt(position);
+                Period period = Period.valueOf(periodStr.toUpperCase());
+                
+                List<RaceRecord> leaderboard = plugin.getRecordManager().getTopTimesForPeriod(courseName, period, 10);
+                
+                if (plugin.getConfigManager().isDebugEnabled()) {
+                    plugin.getLogger().info("[DEBUG] Parsed period leaderboard request - Course: " + courseName + 
+                        ", Period: " + period + ", Type: " + type + ", Position: " + pos);
+                }
+                
+                if (pos > 0 && pos <= leaderboard.size()) {
+                    RaceRecord record = leaderboard.get(pos - 1);
+                    
+                    if ("name".equals(type)) {
+                        if (plugin.getConfigManager().isDebugEnabled()) {
+                            plugin.getLogger().info("[DEBUG] Returning player name: " + record.getPlayer());
+                        }
+                        return record.getPlayer();
+                    } else if ("time".equals(type)) {
+                        String formattedTime = formatTime((long)(record.getTime() * 1000));
+                        if (plugin.getConfigManager().isDebugEnabled()) {
+                            plugin.getLogger().info("[DEBUG] Returning formatted time: " + formattedTime);
+                        }
+                        return formattedTime;
+                    }
+                }
+                
+                if (plugin.getConfigManager().isDebugEnabled()) {
+                    plugin.getLogger().info("[DEBUG] No entry found for position " + pos + " in period " + period);
+                }
+                return "N/A";
+            } catch (NumberFormatException e) {
+                if (plugin.getConfigManager().isDebugEnabled()) {
+                    plugin.getLogger().warning("[DEBUG] Invalid position in period leaderboard placeholder: " + position);
+                }
+                return "Invalid Position";
+            } catch (IllegalArgumentException e) {
+                if (plugin.getConfigManager().isDebugEnabled()) {
+                    plugin.getLogger().warning("[DEBUG] Invalid period in leaderboard placeholder: " + periodStr);
+                }
+                return "Invalid Period";
+            } catch (Exception e) {
+                if (plugin.getConfigManager().isDebugEnabled()) {
+                    plugin.getLogger().warning("[DEBUG] Error processing period leaderboard placeholder: " + e.getMessage());
+                }
+                return "Error";
+            }
+        }
+        
+        if (plugin.getConfigManager().isDebugEnabled()) {
+            plugin.getLogger().warning("[DEBUG] Invalid period leaderboard placeholder format: " + params);
         }
         return "Invalid Format";
     }

@@ -11,6 +11,7 @@ D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\listener\SetupListener.java
 D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\listener\StartButtonListener.java
 D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\model\Course.java
 D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\model\CourseType.java
+D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\model\Period.java
 D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\model\RaceRecord.java
 D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\race\ActiveRace.java
 D:\Projects\BOCRacePlugin\src\main\java\com\bocrace\race\MultiplayerRace.java

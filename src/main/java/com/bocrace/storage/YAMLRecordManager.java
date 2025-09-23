@@ -3,6 +3,7 @@ package com.bocrace.storage;
 import com.bocrace.BOCRacePlugin;
 import com.bocrace.model.RaceRecord;
 import com.bocrace.model.CourseType;
+import com.bocrace.model.Period;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -260,6 +261,53 @@ public class YAMLRecordManager implements RecordManager {
         }
         
         return records;
+    }
+    
+    @Override
+    public List<RaceRecord> getTopTimesForPeriod(String course, Period period, int limit) {
+        // Get all records first
+        List<RaceRecord> allRecords = getTopTimes(course, Integer.MAX_VALUE);
+        
+        // Filter by period
+        LocalDateTime now = LocalDateTime.now();
+        List<RaceRecord> filteredRecords = allRecords.stream()
+            .filter(record -> isWithinPeriod(record.getDate(), period, now))
+            .collect(Collectors.toList());
+        
+        // Sort by time (best first) and limit results
+        filteredRecords.sort(Comparator.comparingDouble(RaceRecord::getTime));
+        if (filteredRecords.size() > limit) {
+            filteredRecords = filteredRecords.subList(0, limit);
+        }
+        
+        return filteredRecords;
+    }
+    
+    /**
+     * Check if a record date falls within the specified period
+     */
+    private boolean isWithinPeriod(LocalDateTime recordDate, Period period, LocalDateTime now) {
+        switch (period) {
+            case DAILY:
+                // Today (midnight to midnight)
+                LocalDateTime todayStart = now.toLocalDate().atStartOfDay();
+                LocalDateTime todayEnd = todayStart.plusDays(1);
+                return !recordDate.isBefore(todayStart) && recordDate.isBefore(todayEnd);
+                
+            case WEEKLY:
+                // Last 7 days (rolling)
+                LocalDateTime weekAgo = now.minusDays(7);
+                return !recordDate.isBefore(weekAgo) && !recordDate.isAfter(now);
+                
+            case MONTHLY:
+                // Current calendar month (1st to last day)
+                LocalDateTime monthStart = now.toLocalDate().withDayOfMonth(1).atStartOfDay();
+                LocalDateTime nextMonth = monthStart.plusMonths(1);
+                return !recordDate.isBefore(monthStart) && recordDate.isBefore(nextMonth);
+                
+            default:
+                return false;
+        }
     }
     
     @Override
