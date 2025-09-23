@@ -237,6 +237,30 @@ public class SetupListener implements Listener {
         return material.name().contains("BUTTON");
     }
     
+    /**
+     * Snaps yaw to the nearest 45-degree angle for better orientation
+     */
+    private float snapYawTo45Degrees(float yaw) {
+        // Normalize yaw to 0-360 range
+        while (yaw < 0) yaw += 360;
+        while (yaw >= 360) yaw -= 360;
+        
+        // Snap to nearest 45-degree angle (0, 45, 90, 135, 180, 225, 270, 315)
+        float[] snapAngles = {0f, 45f, 90f, 135f, 180f, 225f, 270f, 315f};
+        float closestAngle = snapAngles[0];
+        float smallestDifference = Math.abs(yaw - snapAngles[0]);
+        
+        for (float angle : snapAngles) {
+            float difference = Math.abs(yaw - angle);
+            if (difference < smallestDifference) {
+                smallestDifference = difference;
+                closestAngle = angle;
+            }
+        }
+        
+        return closestAngle;
+    }
+    
     private void handleSetupMode(PlayerInteractEvent event, Player player, BOCRacePlugin.SetupMode setupMode) {
         
         // Check if setup mode has expired
@@ -261,12 +285,20 @@ public class SetupListener implements Listener {
         String courseName = setupMode.getCourseName();
         String action = setupMode.getAction();
         
-        // For boat spawn and lobby locations, use player's looking direction
+        // For boat spawn and lobby locations, snap yaw to 45-degree angles and default pitch to 0
         if (action.equals("setboatspawn") || action.equals("setmainlobbyspawn") || action.equals("setcourselobbyspawn") ||
             action.equals("setmpracelobbyspawn") || action.startsWith("setmpboatspawn")) {
-            location.setYaw(player.getLocation().getYaw());
-            location.setPitch(player.getLocation().getPitch());
-            plugin.debugLog("Captured player direction for " + action + " - Yaw: " + location.getYaw() + ", Pitch: " + location.getPitch());
+            
+            // Snap yaw to nearest 45-degree angle
+            float originalYaw = player.getLocation().getYaw();
+            float snappedYaw = snapYawTo45Degrees(originalYaw);
+            
+            // Always set pitch to 0 (horizontal looking)
+            location.setYaw(snappedYaw);
+            location.setPitch(0.0f);
+            
+            plugin.debugLog("Snapped direction for " + action + " - Original Yaw: " + originalYaw + 
+                           " -> Snapped Yaw: " + snappedYaw + ", Pitch: 0.0");
         }
         
         plugin.getLogger().info("[DEBUG] Right-click captured - Player: " + player.getName() + 
