@@ -106,6 +106,10 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
                 return handleTestData(sender);
             case "racedebug":
                 return handleRaceDebug(sender);
+            case "close":
+                return handleSingleplayerClose(sender, args);
+            case "open":
+                return handleSingleplayerOpen(sender, args);
             default:
                 sender.sendMessage("§cUnknown singleplayer command. Use /bocrace help for available commands.");
                 return true;
@@ -143,6 +147,10 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
                 return handleMultiplayerStats(sender, args);
             case "recent":
                 return handleMultiplayerRecent(sender, args);
+            case "close":
+                return handleMultiplayerClose(sender, args);
+            case "open":
+                return handleMultiplayerOpen(sender, args);
             default:
                 sender.sendMessage("§cUnknown multiplayer command. Use /bocrace help for available commands.");
                 return true;
@@ -161,6 +169,8 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("§a/bocrace singleplayer tp <name> §7- Teleport to a singleplayer course");
         sender.sendMessage("§a/bocrace singleplayer info <name> §7- Show course information and usage statistics");
         sender.sendMessage("§a/bocrace singleplayer reload §7- Reload singleplayer courses");
+        sender.sendMessage("§a/bocrace singleplayer close <name> §7- Mark singleplayer course as closed");
+        sender.sendMessage("§a/bocrace singleplayer open <name> §7- Mark singleplayer course as open");
         
         // Multiplayer Commands (Aqua)
         sender.sendMessage("§6Multiplayer Commands:");
@@ -174,6 +184,8 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("§b/bocrace multiplayer reload §7- Reload multiplayer courses");
         sender.sendMessage("§b/bocrace multiplayer stats <name> §7- Show course statistics");
         sender.sendMessage("§b/bocrace multiplayer recent <name> §7- Show recent race results");
+        sender.sendMessage("§b/bocrace multiplayer close <name> §7- Mark multiplayer course as closed");
+        sender.sendMessage("§b/bocrace multiplayer open <name> §7- Mark multiplayer course as open");
         
         // Player Statistics Commands (Light Purple)
         sender.sendMessage("§6Player Statistics Commands:");
@@ -226,7 +238,7 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
             String firstArg = args[0].toLowerCase();
             if (firstArg.equals("singleplayer")) {
                 // Singleplayer subcommands
-                List<String> spCommands = Arrays.asList("create", "setup", "delete", "list", "tp", "info", "reload", "testdata", "racedebug");
+                List<String> spCommands = Arrays.asList("create", "setup", "delete", "list", "tp", "info", "reload", "testdata", "racedebug", "close", "open");
                 for (String spCommand : spCommands) {
                     if (spCommand.toLowerCase().startsWith(args[1].toLowerCase())) {
                         completions.add(spCommand);
@@ -234,7 +246,7 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
                 }
             } else if (firstArg.equals("multiplayer")) {
                 // Multiplayer subcommands
-                List<String> mpCommands = Arrays.asList("create", "setup", "edit", "delete", "list", "tp", "info", "reload", "stats", "recent");
+                List<String> mpCommands = Arrays.asList("create", "setup", "edit", "delete", "list", "tp", "info", "reload", "stats", "recent", "close", "open");
                 for (String mpCommand : mpCommands) {
                     if (mpCommand.toLowerCase().startsWith(args[1].toLowerCase())) {
                         completions.add(mpCommand);
@@ -266,6 +278,14 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
                         completions.add(courseName);
                     }
                 }
+            } else if (firstArg.equals("course")) {
+                // Course management subcommands
+                List<String> courseCommands = Arrays.asList("close", "open");
+                for (String courseCommand : courseCommands) {
+                    if (courseCommand.toLowerCase().startsWith(args[1].toLowerCase())) {
+                        completions.add(courseCommand);
+                    }
+                }
             }
         } else if (args.length == 3) {
             // Third argument - course names for commands that need them
@@ -273,7 +293,7 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
             String secondArg = args[1].toLowerCase();
             
             if (firstArg.equals("singleplayer")) {
-                if (secondArg.equals("delete") || secondArg.equals("info") || secondArg.equals("tp") || secondArg.equals("setup")) {
+                if (secondArg.equals("delete") || secondArg.equals("info") || secondArg.equals("tp") || secondArg.equals("setup") || secondArg.equals("close") || secondArg.equals("open")) {
                     // Add singleplayer course names
                     var courses = plugin.getStorageManager().getCoursesByType(CourseType.SINGLEPLAYER);
                     for (Course course : courses) {
@@ -284,7 +304,8 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
                 }
             } else if (firstArg.equals("multiplayer")) {
                 if (secondArg.equals("delete") || secondArg.equals("info") || secondArg.equals("tp") || 
-                    secondArg.equals("stats") || secondArg.equals("recent") || secondArg.equals("setup")) {
+                    secondArg.equals("stats") || secondArg.equals("recent") || secondArg.equals("setup") || 
+                    secondArg.equals("close") || secondArg.equals("open")) {
                     // Add multiplayer course names
                     var courses = plugin.getStorageManager().getCoursesByType(CourseType.MULTIPLAYER);
                     for (Course course : courses) {
@@ -416,6 +437,7 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         // Set default per-course settings (so admins can easily customize)
         course.setSoundsEnabled(true);      // Default: sounds enabled
         course.setParticlesEnabled(true);   // Default: particles enabled
+        course.setManuallyClosed(true);     // Default: closed until setup is complete
         
         // Set default custom messages (so admins can see what can be customized)
         Map<String, String> defaultMessages = new HashMap<>();
@@ -1068,6 +1090,7 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         
         // Create new course
         Course course = new Course(courseName, CourseType.MULTIPLAYER, sender.getName());
+        course.setManuallyClosed(true); // Default: closed until setup is complete
         plugin.getStorageManager().addCourse(course);
         plugin.getStorageManager().saveCourse(course);
         
@@ -1789,5 +1812,117 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
             java.time.ZoneId.systemDefault()
         );
         return dateTime.format(java.time.format.DateTimeFormatter.ofPattern("MM/dd HH:mm"));
+    }
+    
+    /**
+     * Handle singleplayer course close command
+     */
+    private boolean handleSingleplayerClose(CommandSender sender, String[] args) {
+        if (args.length < 3) {
+            sender.sendMessage("§cUsage: /bocrace singleplayer close <coursename>");
+            return true;
+        }
+        
+        String courseName = args[2];
+        Course course = plugin.getStorageManager().getCourse(courseName);
+        
+        if (course == null || course.getType() != CourseType.SINGLEPLAYER) {
+            sender.sendMessage("§cSingleplayer course '" + courseName + "' not found!");
+            return true;
+        }
+        
+        course.setManuallyClosed(true);
+        plugin.getStorageManager().saveCourse(course);
+        sender.sendMessage("§cSingleplayer course '" + courseName + "' has been marked as closed.");
+        sender.sendMessage("§7Players will not be able to race on this course until it's opened.");
+        
+        plugin.getLogger().info("[DEBUG] Singleplayer course close command - Course: " + courseName + 
+            ", Player: " + sender.getName());
+        
+        return true;
+    }
+    
+    /**
+     * Handle singleplayer course open command
+     */
+    private boolean handleSingleplayerOpen(CommandSender sender, String[] args) {
+        if (args.length < 3) {
+            sender.sendMessage("§cUsage: /bocrace singleplayer open <coursename>");
+            return true;
+        }
+        
+        String courseName = args[2];
+        Course course = plugin.getStorageManager().getCourse(courseName);
+        
+        if (course == null || course.getType() != CourseType.SINGLEPLAYER) {
+            sender.sendMessage("§cSingleplayer course '" + courseName + "' not found!");
+            return true;
+        }
+        
+        course.setManuallyClosed(false);
+        plugin.getStorageManager().saveCourse(course);
+        sender.sendMessage("§aSingleplayer course '" + courseName + "' has been marked as open.");
+        sender.sendMessage("§7Players can now race on this course (if setup is complete).");
+        
+        plugin.getLogger().info("[DEBUG] Singleplayer course open command - Course: " + courseName + 
+            ", Player: " + sender.getName());
+        
+        return true;
+    }
+    
+    /**
+     * Handle multiplayer course close command
+     */
+    private boolean handleMultiplayerClose(CommandSender sender, String[] args) {
+        if (args.length < 3) {
+            sender.sendMessage("§cUsage: /bocrace multiplayer close <coursename>");
+            return true;
+        }
+        
+        String courseName = args[2];
+        Course course = plugin.getStorageManager().getCourse(courseName);
+        
+        if (course == null || course.getType() != CourseType.MULTIPLAYER) {
+            sender.sendMessage("§cMultiplayer course '" + courseName + "' not found!");
+            return true;
+        }
+        
+        course.setManuallyClosed(true);
+        plugin.getStorageManager().saveCourse(course);
+        sender.sendMessage("§cMultiplayer course '" + courseName + "' has been marked as closed.");
+        sender.sendMessage("§7Players will not be able to race on this course until it's opened.");
+        
+        plugin.getLogger().info("[DEBUG] Multiplayer course close command - Course: " + courseName + 
+            ", Player: " + sender.getName());
+        
+        return true;
+    }
+    
+    /**
+     * Handle multiplayer course open command
+     */
+    private boolean handleMultiplayerOpen(CommandSender sender, String[] args) {
+        if (args.length < 3) {
+            sender.sendMessage("§cUsage: /bocrace multiplayer open <coursename>");
+            return true;
+        }
+        
+        String courseName = args[2];
+        Course course = plugin.getStorageManager().getCourse(courseName);
+        
+        if (course == null || course.getType() != CourseType.MULTIPLAYER) {
+            sender.sendMessage("§cMultiplayer course '" + courseName + "' not found!");
+            return true;
+        }
+        
+        course.setManuallyClosed(false);
+        plugin.getStorageManager().saveCourse(course);
+        sender.sendMessage("§aMultiplayer course '" + courseName + "' has been marked as open.");
+        sender.sendMessage("§7Players can now race on this course (if setup is complete).");
+        
+        plugin.getLogger().info("[DEBUG] Multiplayer course open command - Course: " + courseName + 
+            ", Player: " + sender.getName());
+        
+        return true;
     }
 }

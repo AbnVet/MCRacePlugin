@@ -55,6 +55,9 @@ public class Course {
     private Map<String, String> customMessages; // null = use global config
     private String boatType;            // null = use default (OAK_BOAT)
     
+    // Course status management
+    private boolean manuallyClosed = false; // Course manually marked as closed for maintenance
+    
     
     // Default constructor
     public Course() {
@@ -293,5 +296,15 @@ public class Course {
     
     public String getPrefixDisplay() {
         return prefix != null ? prefix : "[BOCRace]";
+    }
+    
+    // Course status management
+    public boolean isManuallyClosed() {
+        return manuallyClosed;
+    }
+    
+    public void setManuallyClosed(boolean manuallyClosed) {
+        this.manuallyClosed = manuallyClosed;
+        this.lastEdited = LocalDateTime.now();
     }
 }

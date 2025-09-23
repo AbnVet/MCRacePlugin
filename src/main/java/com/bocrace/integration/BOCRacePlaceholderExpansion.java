@@ -259,15 +259,31 @@ public class BOCRacePlaceholderExpansion extends PlaceholderExpansion {
         Course course = plugin.getStorageManager().getCourse(courseName);
         if (course == null) return "Not Found";
         
+        // Priority 1: Manual override - course marked as closed
+        if (course.isManuallyClosed()) {
+            return "§4Closed";
+        }
+        
+        // Priority 2: Course setup is incomplete
+        if (!plugin.getRaceManager().isRaceReady(course)) {
+            return "§4Closed";
+        }
+        
+        // Priority 3: Someone is actively racing
         if (plugin.getRaceManager().isCourseOccupied(courseName)) {
             return "§5In Use";
         }
         
-        // Check if someone is in setup mode for this course
+        // Priority 4: Someone is in setup mode for this course
         boolean inSetup = plugin.getPlayerSetupModes().values().stream()
             .anyMatch(mode -> mode.getCourseName().equals(courseName));
         
-        return inSetup ? "§4Setup" : "§2Open";
+        if (inSetup) {
+            return "§4Setup";
+        }
+        
+        // Priority 5: Course is ready and available
+        return "§2Open";
     }
     
     private String getCourseRecord(String courseName) {

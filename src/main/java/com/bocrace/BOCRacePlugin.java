@@ -308,7 +308,7 @@ public class BOCRacePlugin extends JavaPlugin {
             content.append("# COURSE STATUS PLACEHOLDERS\n");
             content.append("# ==========================================\n");
             content.append("course_status: \"").append("%bocrace_course_").append(exampleCourse).append("_status%\"\n");
-            content.append("# Returns: §2Open, §5In Use, or §4Setup\n\n");
+            content.append("# Returns: §4Closed, §5In Use, §4Setup, or §2Open\n\n");
             
             content.append("# ==========================================\n");
             content.append("# COURSE RECORD PLACEHOLDERS\n");
@@ -390,7 +390,7 @@ public class BOCRacePlugin extends JavaPlugin {
             content.append("# ==========================================\n");
             content.append("# §2 = Green (Open status)\n");
             content.append("# §5 = Purple (In Use status)\n");
-            content.append("# §4 = Red (Setup status)\n");
+            content.append("# §4 = Red (Setup/Closed status)\n");
             content.append("# §f = White (default text)\n");
             content.append("# §7 = Gray (secondary text)\n\n");
             

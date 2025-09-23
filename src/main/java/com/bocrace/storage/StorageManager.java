@@ -227,6 +227,9 @@ public class StorageManager {
         if (config.contains("boat-type")) {
             course.setBoatType(config.getString("boat-type"));
         }
+        if (config.contains("manually-closed")) {
+            course.setManuallyClosed(config.getBoolean("manually-closed"));
+        }
         if (config.contains("custom-messages") && config.isConfigurationSection("custom-messages")) {
             Map<String, String> customMessages = new HashMap<>();
             ConfigurationSection messagesSection = config.getConfigurationSection("custom-messages");
@@ -338,6 +341,7 @@ public class StorageManager {
             if (course.getBoatType() != null) {
                 config.set("boat-type", course.getBoatType());
             }
+            config.set("manually-closed", course.isManuallyClosed());
             if (course.getCustomMessages() != null && !course.getCustomMessages().isEmpty()) {
                 for (Map.Entry<String, String> entry : course.getCustomMessages().entrySet()) {
                     config.set("custom-messages." + entry.getKey(), entry.getValue());
