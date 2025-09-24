@@ -230,6 +230,26 @@ public class StorageManager {
         if (config.contains("manually-closed")) {
             course.setManuallyClosed(config.getBoolean("manually-closed"));
         }
+        
+        // Load leaderboard configuration with defaults
+        if (config.contains("leaderboards.daily")) {
+            course.setDailyLeaderboard(config.getBoolean("leaderboards.daily"));
+        }
+        if (config.contains("leaderboards.weekly")) {
+            course.setWeeklyLeaderboard(config.getBoolean("leaderboards.weekly"));
+        }
+        if (config.contains("leaderboards.monthly")) {
+            course.setMonthlyLeaderboard(config.getBoolean("leaderboards.monthly"));
+        }
+        if (config.contains("leaderboards.reset-daily")) {
+            course.setResetDaily(config.getBoolean("leaderboards.reset-daily"));
+        }
+        if (config.contains("leaderboards.reset-weekly")) {
+            course.setResetWeekly(config.getBoolean("leaderboards.reset-weekly"));
+        }
+        if (config.contains("leaderboards.reset-monthly")) {
+            course.setResetMonthly(config.getBoolean("leaderboards.reset-monthly"));
+        }
         if (config.contains("custom-messages") && config.isConfigurationSection("custom-messages")) {
             Map<String, String> customMessages = new HashMap<>();
             ConfigurationSection messagesSection = config.getConfigurationSection("custom-messages");
@@ -342,6 +362,15 @@ public class StorageManager {
                 config.set("boat-type", course.getBoatType());
             }
             config.set("manually-closed", course.isManuallyClosed());
+            
+            // Save leaderboard configuration
+            config.set("leaderboards.daily", course.isDailyLeaderboard());
+            config.set("leaderboards.weekly", course.isWeeklyLeaderboard());
+            config.set("leaderboards.monthly", course.isMonthlyLeaderboard());
+            config.set("leaderboards.reset-daily", course.isResetDaily());
+            config.set("leaderboards.reset-weekly", course.isResetWeekly());
+            config.set("leaderboards.reset-monthly", course.isResetMonthly());
+            
             if (course.getCustomMessages() != null && !course.getCustomMessages().isEmpty()) {
                 for (Map.Entry<String, String> entry : course.getCustomMessages().entrySet()) {
                     config.set("custom-messages." + entry.getKey(), entry.getValue());

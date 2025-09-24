@@ -56,7 +56,15 @@ public class Course {
     private String boatType;            // null = use default (OAK_BOAT)
     
     // Course status management
-    private boolean manuallyClosed = false; // Course manually marked as closed for maintenance
+    private boolean manuallyClosed = false;
+    
+    // Leaderboard configuration
+    private boolean dailyLeaderboard = true;    // Default: true
+    private boolean weeklyLeaderboard = false;  // Default: false
+    private boolean monthlyLeaderboard = false; // Default: false
+    private boolean resetDaily = true;          // Default: true (reset every 24hrs)
+    private boolean resetWeekly = true;         // Default: true (reset every 7 days)
+    private boolean resetMonthly = true;        // Default: true (reset every month)
     
     
     // Default constructor
@@ -305,6 +313,61 @@ public class Course {
     
     public void setManuallyClosed(boolean manuallyClosed) {
         this.manuallyClosed = manuallyClosed;
+        this.lastEdited = LocalDateTime.now();
+    }
+    
+    // Leaderboard configuration getters and setters
+    public boolean isDailyLeaderboard() {
+        return dailyLeaderboard;
+    }
+    
+    public void setDailyLeaderboard(boolean dailyLeaderboard) {
+        this.dailyLeaderboard = dailyLeaderboard;
+        this.lastEdited = LocalDateTime.now();
+    }
+    
+    public boolean isWeeklyLeaderboard() {
+        return weeklyLeaderboard;
+    }
+    
+    public void setWeeklyLeaderboard(boolean weeklyLeaderboard) {
+        this.weeklyLeaderboard = weeklyLeaderboard;
+        this.lastEdited = LocalDateTime.now();
+    }
+    
+    public boolean isMonthlyLeaderboard() {
+        return monthlyLeaderboard;
+    }
+    
+    public void setMonthlyLeaderboard(boolean monthlyLeaderboard) {
+        this.monthlyLeaderboard = monthlyLeaderboard;
+        this.lastEdited = LocalDateTime.now();
+    }
+    
+    public boolean isResetDaily() {
+        return resetDaily;
+    }
+    
+    public void setResetDaily(boolean resetDaily) {
+        this.resetDaily = resetDaily;
+        this.lastEdited = LocalDateTime.now();
+    }
+    
+    public boolean isResetWeekly() {
+        return resetWeekly;
+    }
+    
+    public void setResetWeekly(boolean resetWeekly) {
+        this.resetWeekly = resetWeekly;
+        this.lastEdited = LocalDateTime.now();
+    }
+    
+    public boolean isResetMonthly() {
+        return resetMonthly;
+    }
+    
+    public void setResetMonthly(boolean resetMonthly) {
+        this.resetMonthly = resetMonthly;
         this.lastEdited = LocalDateTime.now();
     }
 }

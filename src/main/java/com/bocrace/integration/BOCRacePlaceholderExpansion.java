@@ -89,14 +89,14 @@ public class BOCRacePlaceholderExpansion extends PlaceholderExpansion {
             return getCourseUsage(courseName);
         }
         
-        // Leaderboard placeholders: leaderboard_<course>_<position>
-        if (params.startsWith("leaderboard_")) {
-            return handleLeaderboardPlaceholder(params);
-        }
-        
         // Period-based leaderboard placeholders: leaderboard_<course>_<period>_name_<position> or leaderboard_<course>_<period>_time_<position>
         if (params.startsWith("leaderboard_") && (params.contains("_daily_") || params.contains("_weekly_") || params.contains("_monthly_"))) {
             return handlePeriodLeaderboardPlaceholder(params);
+        }
+        
+        // Leaderboard placeholders: leaderboard_<course>_<position>
+        if (params.startsWith("leaderboard_")) {
+            return handleLeaderboardPlaceholder(params);
         }
         
         // Global statistics
@@ -167,14 +167,14 @@ public class BOCRacePlaceholderExpansion extends PlaceholderExpansion {
             return getCourseUsage(courseName);
         }
         
-        // Leaderboard placeholders: leaderboard_<course>_<position> (also handle in player context)
-        if (params.startsWith("leaderboard_")) {
-            return handleLeaderboardPlaceholder(params);
-        }
-        
         // Period-based leaderboard placeholders: leaderboard_<course>_<period>_name_<position> or leaderboard_<course>_<period>_time_<position> (also handle in player context)
         if (params.startsWith("leaderboard_") && (params.contains("_daily_") || params.contains("_weekly_") || params.contains("_monthly_"))) {
             return handlePeriodLeaderboardPlaceholder(params);
+        }
+        
+        // Leaderboard placeholders: leaderboard_<course>_<position> (also handle in player context)
+        if (params.startsWith("leaderboard_")) {
+            return handleLeaderboardPlaceholder(params);
         }
         
         // DQ-related placeholders
@@ -529,59 +529,107 @@ public class BOCRacePlaceholderExpansion extends PlaceholderExpansion {
         }
         
         String[] parts = params.split("_");
-        if (parts.length >= 5) {
-            String position = parts[parts.length - 1];
-            String type = parts[parts.length - 2]; // "name" or "time"
-            String periodStr = parts[parts.length - 3]; // "daily", "weekly", or "monthly"
-            String courseName = String.join("_", java.util.Arrays.copyOfRange(parts, 1, parts.length - 3));
-            
+        
+        // Handle two formats:
+        // Format 1: leaderboard_<course>_<period>_<position> (returns combined name - time)
+        // Format 2: leaderboard_<course>_<period>_<type>_<position> (returns name or time)
+        
+        String position, type, periodStr, courseName;
+        
+        if (parts.length >= 4) {
+            // Try format 1 first: leaderboard_<course>_<period>_<position>
             try {
-                int pos = Integer.parseInt(position);
+                position = parts[parts.length - 1];
+                periodStr = parts[parts.length - 2];
+                courseName = String.join("_", java.util.Arrays.copyOfRange(parts, 1, parts.length - 2));
+                
+                // Validate period
                 Period period = Period.valueOf(periodStr.toUpperCase());
+                int pos = Integer.parseInt(position);
                 
                 List<RaceRecord> leaderboard = plugin.getRecordManager().getTopTimesForPeriod(courseName, period, 10);
                 
                 if (plugin.getConfigManager().isDebugEnabled()) {
-                    plugin.getLogger().info("[DEBUG] Parsed period leaderboard request - Course: " + courseName + 
-                        ", Period: " + period + ", Type: " + type + ", Position: " + pos);
+                    plugin.getLogger().info("[DEBUG] Parsed period leaderboard request (format 1) - Course: " + courseName + 
+                        ", Period: " + period + ", Position: " + pos);
                 }
                 
                 if (pos > 0 && pos <= leaderboard.size()) {
                     RaceRecord record = leaderboard.get(pos - 1);
-                    
-                    if ("name".equals(type)) {
-                        if (plugin.getConfigManager().isDebugEnabled()) {
-                            plugin.getLogger().info("[DEBUG] Returning player name: " + record.getPlayer());
-                        }
-                        return record.getPlayer();
-                    } else if ("time".equals(type)) {
-                        String formattedTime = formatTime((long)(record.getTime() * 1000));
-                        if (plugin.getConfigManager().isDebugEnabled()) {
-                            plugin.getLogger().info("[DEBUG] Returning formatted time: " + formattedTime);
-                        }
-                        return formattedTime;
+                    String result = record.getPlayer() + " - " + formatTime((long)(record.getTime() * 1000));
+                    if (plugin.getConfigManager().isDebugEnabled()) {
+                        plugin.getLogger().info("[DEBUG] Returning combined result: " + result);
                     }
+                    return result;
                 }
                 
                 if (plugin.getConfigManager().isDebugEnabled()) {
                     plugin.getLogger().info("[DEBUG] No entry found for position " + pos + " in period " + period);
                 }
                 return "N/A";
-            } catch (NumberFormatException e) {
-                if (plugin.getConfigManager().isDebugEnabled()) {
-                    plugin.getLogger().warning("[DEBUG] Invalid position in period leaderboard placeholder: " + position);
-                }
-                return "Invalid Position";
+                
             } catch (IllegalArgumentException e) {
-                if (plugin.getConfigManager().isDebugEnabled()) {
-                    plugin.getLogger().warning("[DEBUG] Invalid period in leaderboard placeholder: " + periodStr);
+                // Not a valid period, try format 2
+                if (parts.length >= 5) {
+                    position = parts[parts.length - 1];
+                    type = parts[parts.length - 2]; // "name" or "time"
+                    periodStr = parts[parts.length - 3]; // "daily", "weekly", or "monthly"
+                    courseName = String.join("_", java.util.Arrays.copyOfRange(parts, 1, parts.length - 3));
+                    
+                    try {
+                        int pos = Integer.parseInt(position);
+                        Period period = Period.valueOf(periodStr.toUpperCase());
+                        
+                        List<RaceRecord> leaderboard = plugin.getRecordManager().getTopTimesForPeriod(courseName, period, 10);
+                        
+                        if (plugin.getConfigManager().isDebugEnabled()) {
+                            plugin.getLogger().info("[DEBUG] Parsed period leaderboard request (format 2) - Course: " + courseName + 
+                                ", Period: " + period + ", Type: " + type + ", Position: " + pos);
+                        }
+                        
+                        if (pos > 0 && pos <= leaderboard.size()) {
+                            RaceRecord record = leaderboard.get(pos - 1);
+                            
+                            if ("name".equals(type)) {
+                                if (plugin.getConfigManager().isDebugEnabled()) {
+                                    plugin.getLogger().info("[DEBUG] Returning player name: " + record.getPlayer());
+                                }
+                                return record.getPlayer();
+                            } else if ("time".equals(type)) {
+                                String formattedTime = formatTime((long)(record.getTime() * 1000));
+                                if (plugin.getConfigManager().isDebugEnabled()) {
+                                    plugin.getLogger().info("[DEBUG] Returning formatted time: " + formattedTime);
+                                }
+                                return formattedTime;
+                            }
+                        }
+                        
+                        if (plugin.getConfigManager().isDebugEnabled()) {
+                            plugin.getLogger().info("[DEBUG] No entry found for position " + pos + " in period " + period);
+                        }
+                        return "N/A";
+                    } catch (NumberFormatException e2) {
+                        if (plugin.getConfigManager().isDebugEnabled()) {
+                            plugin.getLogger().warning("[DEBUG] Invalid position in period leaderboard placeholder: " + position);
+                        }
+                        return "Invalid Position";
+                    } catch (IllegalArgumentException e2) {
+                        if (plugin.getConfigManager().isDebugEnabled()) {
+                            plugin.getLogger().warning("[DEBUG] Invalid period in leaderboard placeholder: " + periodStr);
+                        }
+                        return "Invalid Period";
+                    } catch (Exception e2) {
+                        if (plugin.getConfigManager().isDebugEnabled()) {
+                            plugin.getLogger().warning("[DEBUG] Error processing period leaderboard placeholder (format 2): " + e2.getMessage());
+                        }
+                        return "Error";
+                    }
+                } else {
+                    if (plugin.getConfigManager().isDebugEnabled()) {
+                        plugin.getLogger().warning("[DEBUG] Invalid period leaderboard placeholder format: " + params);
+                    }
+                    return "Invalid Format";
                 }
-                return "Invalid Period";
-            } catch (Exception e) {
-                if (plugin.getConfigManager().isDebugEnabled()) {
-                    plugin.getLogger().warning("[DEBUG] Error processing period leaderboard placeholder: " + e.getMessage());
-                }
-                return "Error";
             }
         }
         

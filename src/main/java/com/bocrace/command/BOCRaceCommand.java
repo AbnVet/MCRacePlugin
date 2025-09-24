@@ -1768,79 +1768,160 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
     private void generateTestLeaderboardData(String courseName) {
         String[] testPlayers = {"TestPlayer1", "TestPlayer2", "TestPlayer3", "TestPlayer4", "TestPlayer5"};
         
-        plugin.debugLog("Generating STRATEGIC test leaderboard data for course: " + courseName);
+        plugin.debugLog("Generating COMPREHENSIVE test leaderboard data for course: " + courseName);
         
-        // STRATEGIC DATA GENERATION FOR TESTING PERIODS
-        // Goal: Ensure we have meaningful data for Daily, Weekly, and Monthly leaderboards
-        
-        // 1. TODAY'S RECORDS (Daily leaderboard should show these)
-        plugin.debugLog("Generating TODAY's records...");
-        generateRecordsForDay(courseName, testPlayers, 0, new double[]{11.2, 11.5, 11.8, 12.1, 12.4});
-        
-        // 2. YESTERDAY'S RECORDS (Weekly leaderboard should include these)
-        plugin.debugLog("Generating YESTERDAY's records...");
-        generateRecordsForDay(courseName, testPlayers, 1, new double[]{10.8, 11.1, 11.4, 11.7, 12.0});
-        
-        // 3. 3 DAYS AGO (Weekly leaderboard should include these)
-        plugin.debugLog("Generating 3 DAYS AGO records...");
-        generateRecordsForDay(courseName, testPlayers, 3, new double[]{10.5, 10.8, 11.1, 11.4, 11.7});
-        
-        // 4. 1 WEEK AGO (Monthly leaderboard should include these, Weekly should NOT)
-        plugin.debugLog("Generating 1 WEEK AGO records...");
-        generateRecordsForDay(courseName, testPlayers, 7, new double[]{10.2, 10.5, 10.8, 11.1, 11.4});
-        
-        // 5. 2 WEEKS AGO (Monthly leaderboard should include these)
-        plugin.debugLog("Generating 2 WEEKS AGO records...");
-        generateRecordsForDay(courseName, testPlayers, 14, new double[]{9.8, 10.1, 10.4, 10.7, 11.0});
-        
-        // 6. 1 MONTH AGO (Monthly leaderboard should include these)
-        plugin.debugLog("Generating 1 MONTH AGO records...");
-        generateRecordsForDay(courseName, testPlayers, 30, new double[]{9.5, 9.8, 10.1, 10.4, 10.7});
-        
-        // 7. FILL IN SOME EXTRA RECORDS for more realistic data
-        plugin.debugLog("Generating additional random records...");
-        for (int day = 2; day < 30; day++) {
-            if (day != 7 && day != 14 && day != 30) { // Skip days we already covered
-                double[] randomTimes = {10.0 + Math.random() * 3.0, 10.5 + Math.random() * 3.0, 
-                                      11.0 + Math.random() * 3.0, 11.5 + Math.random() * 3.0, 12.0 + Math.random() * 3.0};
-                generateRecordsForDay(courseName, testPlayers, day, randomTimes);
-            }
+        // Get course configuration
+        Course course = plugin.getStorageManager().getCourse(courseName);
+        if (course == null) {
+            plugin.getLogger().warning("Course not found for test data generation: " + courseName);
+            return;
         }
         
-        plugin.debugLog("STRATEGIC test data generation complete!");
+        // TEMPORARILY ENABLE all leaderboards for testing
+        plugin.debugLog("Temporarily enabling all leaderboards for test data generation...");
+        boolean originalDaily = course.isDailyLeaderboard();
+        boolean originalWeekly = course.isWeeklyLeaderboard();
+        boolean originalMonthly = course.isMonthlyLeaderboard();
+        
+        course.setDailyLeaderboard(true);
+        course.setWeeklyLeaderboard(true);
+        course.setMonthlyLeaderboard(true);
+        
+        // Save the temporary configuration
+        plugin.getStorageManager().saveCourse(course);
+        
+        // 1. Generate TODAY's records (Daily leaderboard)
+        plugin.debugLog("Generating TODAY's test records...");
+        generateTestRecordsForToday(courseName, testPlayers, course.getType());
+        
+        // 2. Generate YESTERDAY's records (Weekly leaderboard)
+        plugin.debugLog("Generating YESTERDAY's test records...");
+        generateTestRecordsForYesterday(courseName, testPlayers, course.getType());
+        
+        // 3. Generate 3 DAYS AGO records (Weekly leaderboard)
+        plugin.debugLog("Generating 3 DAYS AGO test records...");
+        generateTestRecordsForDaysAgo(courseName, testPlayers, course.getType(), 3);
+        
+        // 4. Generate 1 WEEK AGO records (Monthly leaderboard)
+        plugin.debugLog("Generating 1 WEEK AGO test records...");
+        generateTestRecordsForDaysAgo(courseName, testPlayers, course.getType(), 7);
+        
+        // 5. Generate 2 WEEKS AGO records (Monthly leaderboard)
+        plugin.debugLog("Generating 2 WEEKS AGO test records...");
+        generateTestRecordsForDaysAgo(courseName, testPlayers, course.getType(), 14);
+        
+        // RESTORE original configuration
+        plugin.debugLog("Restoring original leaderboard configuration...");
+        course.setDailyLeaderboard(originalDaily);
+        course.setWeeklyLeaderboard(originalWeekly);
+        course.setMonthlyLeaderboard(originalMonthly);
+        plugin.getStorageManager().saveCourse(course);
+        
+        plugin.debugLog("COMPREHENSIVE test data generation complete!");
         plugin.debugLog("Expected results:");
         plugin.debugLog("- Daily leaderboard: Should show today's fastest times");
-        plugin.debugLog("- Weekly leaderboard: Should show last 7 days (today, yesterday, 3 days ago)");
+        plugin.debugLog("- Weekly leaderboard: Should show today + yesterday + 3 days ago");
         plugin.debugLog("- Monthly leaderboard: Should show all records from current month");
+        plugin.debugLog("- All records: Will contain all test records for backup");
+        plugin.debugLog("- All leaderboard files created for testing purposes");
     }
     
-    private void generateRecordsForDay(String courseName, String[] players, int daysAgo, double[] targetTimes) {
-        java.time.LocalDateTime recordDate = java.time.LocalDateTime.now().minusDays(daysAgo);
+    private void generateTestRecordsForToday(String courseName, String[] players, CourseType courseType) {
+        // Generate test records with competitive times
+        double[] baseTimes = {12.5, 12.8, 13.2, 13.8, 14.5}; // Competitive times for testing
         
         for (int i = 0; i < players.length; i++) {
             String player = players[i];
-            double baseTime = targetTimes[i];
+            double baseTime = baseTimes[i];
             
-            // Generate 2-4 races per player on this day
-            int racesToday = 2 + (int)(Math.random() * 3); // 2-4 races
+            // Generate 3-5 races per player for realistic testing
+            int racesToday = 3 + (int)(Math.random() * 3); // 3-5 races
             
             for (int race = 0; race < racesToday; race++) {
-                // Add small variation to base time (±0.3 seconds)
-                double timeVariation = (Math.random() - 0.5) * 0.6;
+                // Add small variation to base time (±0.5 seconds)
+                double timeVariation = (Math.random() - 0.5) * 1.0;
                 double raceTime = baseTime + timeVariation;
                 
                 // Round to 2 decimal places to avoid crazy precision
                 raceTime = Math.round(raceTime * 100.0) / 100.0;
                 
                 // Ensure positive time
-                if (raceTime < 5.0) raceTime = 5.0;
+                if (raceTime < 10.0) raceTime = 10.0;
                 
-                // Save the record
-                plugin.getRecordManager().saveRaceRecord(player, courseName, raceTime, CourseType.SINGLEPLAYER, recordDate);
+                // Save the record using current time (today)
+                plugin.getRecordManager().saveRaceRecord(player, courseName, raceTime, courseType);
                 
-                plugin.debugLog("Generated record: " + player + " - " + String.format("%.2f", raceTime) + "s on " + recordDate.toLocalDate());
+                plugin.debugLog("Generated test record: " + player + " - " + String.format("%.2f", raceTime) + "s");
             }
         }
+        
+        plugin.debugLog("Generated " + (players.length * 4) + " test records for " + courseName + " (TODAY)");
+    }
+    
+    private void generateTestRecordsForYesterday(String courseName, String[] players, CourseType courseType) {
+        // Generate test records for yesterday (slightly slower times)
+        double[] baseTimes = {11.8, 12.1, 12.5, 13.1, 13.8}; // Yesterday's times
+        
+        for (int i = 0; i < players.length; i++) {
+            String player = players[i];
+            double baseTime = baseTimes[i];
+            
+            // Generate 2-4 races per player for yesterday
+            int racesYesterday = 2 + (int)(Math.random() * 3); // 2-4 races
+            
+            for (int race = 0; race < racesYesterday; race++) {
+                // Add small variation to base time (±0.5 seconds)
+                double timeVariation = (Math.random() - 0.5) * 1.0;
+                double raceTime = baseTime + timeVariation;
+                
+                // Round to 2 decimal places
+                raceTime = Math.round(raceTime * 100.0) / 100.0;
+                
+                // Ensure positive time
+                if (raceTime < 10.0) raceTime = 10.0;
+                
+                // Save the record using yesterday's date
+                java.time.LocalDateTime yesterday = java.time.LocalDateTime.now().minusDays(1);
+                plugin.getRecordManager().saveRaceRecord(player, courseName, raceTime, courseType, yesterday);
+                
+                plugin.debugLog("Generated YESTERDAY test record: " + player + " - " + String.format("%.2f", raceTime) + "s");
+            }
+        }
+        
+        plugin.debugLog("Generated " + (players.length * 3) + " test records for " + courseName + " (YESTERDAY)");
+    }
+    
+    private void generateTestRecordsForDaysAgo(String courseName, String[] players, CourseType courseType, int daysAgo) {
+        // Generate test records for specific days ago
+        double[] baseTimes = {11.2, 11.5, 11.9, 12.4, 13.0}; // Historical times
+        
+        for (int i = 0; i < players.length; i++) {
+            String player = players[i];
+            double baseTime = baseTimes[i];
+            
+            // Generate 2-3 races per player
+            int races = 2 + (int)(Math.random() * 2); // 2-3 races
+            
+            for (int race = 0; race < races; race++) {
+                // Add small variation to base time (±0.4 seconds)
+                double timeVariation = (Math.random() - 0.5) * 0.8;
+                double raceTime = baseTime + timeVariation;
+                
+                // Round to 2 decimal places
+                raceTime = Math.round(raceTime * 100.0) / 100.0;
+                
+                // Ensure positive time
+                if (raceTime < 9.0) raceTime = 9.0;
+                
+                // Save the record using historical date
+                java.time.LocalDateTime historicalDate = java.time.LocalDateTime.now().minusDays(daysAgo);
+                plugin.getRecordManager().saveRaceRecord(player, courseName, raceTime, courseType, historicalDate);
+                
+                plugin.debugLog("Generated " + daysAgo + " DAYS AGO test record: " + player + " - " + String.format("%.2f", raceTime) + "s");
+            }
+        }
+        
+        plugin.debugLog("Generated " + (players.length * 2) + " test records for " + courseName + " (" + daysAgo + " DAYS AGO)");
     }
     
     
