@@ -100,14 +100,21 @@ public class StartButtonListener implements Listener {
         // Check if player already has an active race
         if (plugin.getRaceManager().hasActiveRace(player.getUniqueId())) {
             player.sendMessage("§cYou already have an active race!");
-            plugin.debugLog("Race start denied - " + player.getName() + " already has active race");
+            plugin.debugRaceLog("Race start denied - " + player.getName() + " already has active race");
+            return;
+        }
+        
+        // Check if course is manually closed
+        if (course.isManuallyClosed()) {
+            player.sendMessage("§cCourse '" + course.getName() + "' is currently closed. Please try again later.");
+            plugin.debugRaceLog("Race start denied - course " + course.getName() + " is manually closed");
             return;
         }
         
         // Check if course is occupied
         if (plugin.getRaceManager().isCourseOccupied(course.getName())) {
             player.sendMessage("§eTrack in use, please wait.");
-            plugin.debugLog("Race start denied - course " + course.getName() + " is occupied");
+            plugin.debugRaceLog("Race start denied - course " + course.getName() + " is occupied");
             
             // Teleport to lobby if course is busy
             teleportUtil.teleportToLobby(player, course, "course_busy");
@@ -117,7 +124,7 @@ public class StartButtonListener implements Listener {
         // Validate course is ready for racing
         if (!plugin.getRaceManager().isRaceReady(course)) {
             player.sendMessage("§cCourse '" + course.getName() + "' is not ready for racing! Please contact an admin.");
-            plugin.debugLog("Race start denied - course " + course.getName() + " not ready for racing");
+            plugin.debugRaceLog("Race start denied - course " + course.getName() + " not ready for racing");
             return;
         }
         
@@ -125,7 +132,7 @@ public class StartButtonListener implements Listener {
         ActiveRace race = plugin.getRaceManager().startRace(player, course);
         if (race == null) {
             player.sendMessage("§cFailed to start race! Please try again.");
-            plugin.debugLog("Race start failed - RaceManager.startRace returned null for " + player.getName());
+            plugin.debugRaceLog("Race start failed - RaceManager.startRace returned null for " + player.getName());
             return;
         }
         
@@ -134,7 +141,7 @@ public class StartButtonListener implements Listener {
         if (boat == null) {
             plugin.getRaceManager().endRace(player.getUniqueId(), ActiveRace.State.DQ, "boat_spawn_failed");
             player.sendMessage("§cFailed to spawn race boat! Please contact an admin.");
-            plugin.debugLog("Race start failed - boat spawning failed for " + player.getName());
+            plugin.debugRaceLog("Race start failed - boat spawning failed for " + player.getName());
             return;
         }
         
@@ -146,7 +153,7 @@ public class StartButtonListener implements Listener {
         course.recordUsage(player.getName());
         plugin.getStorageManager().saveCourse(course);
         
-        plugin.debugLog("Race started successfully - Player: " + player.getName() + 
+        plugin.debugRaceLog("Race started successfully - Player: " + player.getName() + 
                        ", Course: " + course.getName() + 
                        ", Boat: " + boat.getUniqueId() + 
                        ", Race: " + race.toString());

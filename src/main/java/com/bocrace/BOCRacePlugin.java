@@ -245,6 +245,30 @@ public class BOCRacePlugin extends JavaPlugin {
         }
     }
     
+    public void debugDataLog(String message) {
+        if (configManager.isDataDebugEnabled()) {
+            getLogger().info("[DEBUG-DATA] " + message);
+        }
+    }
+    
+    public void debugRaceLog(String message) {
+        if (configManager.isRaceDebugEnabled()) {
+            getLogger().info("[DEBUG-RACE] " + message);
+        }
+    }
+    
+    public void debugSetupLog(String message) {
+        if (configManager.isSetupDebugEnabled()) {
+            getLogger().info("[DEBUG-SETUP] " + message);
+        }
+    }
+    
+    public void debugMultiplayerLog(String message) {
+        if (configManager.isMultiplayerDebugEnabled()) {
+            getLogger().info("[DEBUG-MULTIPLAYER] " + message);
+        }
+    }
+    
     public void raceDebugLog(String message) {
         if (configManager.isRaceDebugEnabled()) {
             getLogger().info("[RACE-DEBUG] " + message);
@@ -302,7 +326,8 @@ public class BOCRacePlugin extends JavaPlugin {
                 .map(Course::getName)
                 .collect(java.util.stream.Collectors.toList());
             
-            String exampleCourse = courseNames.isEmpty() ? "YourCourseName" : courseNames.get(0);
+            // Use generic examples for better user experience
+            String exampleCourse = "CourseName";
             
             content.append("# ==========================================\n");
             content.append("# COURSE STATUS PLACEHOLDERS\n");
@@ -318,7 +343,18 @@ public class BOCRacePlugin extends JavaPlugin {
             content.append("course_usage_count: \"").append("%bocrace_course_").append(exampleCourse).append("_usage%\"\n\n");
             
             content.append("# ==========================================\n");
-            content.append("# STANDARD LEADERBOARD PLACEHOLDERS\n");
+            content.append("# PLACEHOLDER FORMATS EXPLAINED\n");
+            content.append("# ==========================================\n");
+            content.append("# Format 1 (Combined): %bocrace_leaderboard_<course>_<period>_<position>%\n");
+            content.append("#   Returns: \"PlayerName - Time\" (e.g., \"TestPlayer1 - 11.57s\")\n");
+            content.append("#   Example: %bocrace_leaderboard_").append(exampleCourse).append("_daily_1%\n\n");
+            content.append("# Format 2 (Separate): %bocrace_leaderboard_<course>_<period>_<type>_<position>%\n");
+            content.append("#   Returns: \"PlayerName\" or \"Time\" (separate values)\n");
+            content.append("#   Example: %bocrace_leaderboard_").append(exampleCourse).append("_daily_name_1%\n");
+            content.append("#   Example: %bocrace_leaderboard_").append(exampleCourse).append("_daily_time_1%\n\n");
+            
+            content.append("# ==========================================\n");
+            content.append("# STANDARD LEADERBOARD PLACEHOLDERS (All-Time Records)\n");
             content.append("# ==========================================\n");
             content.append("leaderboard_name_1: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_name_1%\"\n");
             content.append("leaderboard_time_1: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_time_1%\"\n");
@@ -334,6 +370,14 @@ public class BOCRacePlugin extends JavaPlugin {
             content.append("# ==========================================\n");
             content.append("# DAILY LEADERBOARD PLACEHOLDERS (Today's Records)\n");
             content.append("# ==========================================\n");
+            content.append("# Format 1: Combined (PlayerName - Time)\n");
+            content.append("daily_combined_1: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_daily_1%\"\n");
+            content.append("daily_combined_2: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_daily_2%\"\n");
+            content.append("daily_combined_3: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_daily_3%\"\n");
+            content.append("daily_combined_4: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_daily_4%\"\n");
+            content.append("daily_combined_5: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_daily_5%\"\n\n");
+            
+            content.append("# Format 2: Separate (Name and Time)\n");
             content.append("daily_name_1: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_daily_name_1%\"\n");
             content.append("daily_time_1: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_daily_time_1%\"\n");
             content.append("daily_name_2: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_daily_name_2%\"\n");
@@ -344,6 +388,14 @@ public class BOCRacePlugin extends JavaPlugin {
             content.append("# ==========================================\n");
             content.append("# WEEKLY LEADERBOARD PLACEHOLDERS (Last 7 Days)\n");
             content.append("# ==========================================\n");
+            content.append("# Format 1: Combined (PlayerName - Time)\n");
+            content.append("weekly_combined_1: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_weekly_1%\"\n");
+            content.append("weekly_combined_2: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_weekly_2%\"\n");
+            content.append("weekly_combined_3: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_weekly_3%\"\n");
+            content.append("weekly_combined_4: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_weekly_4%\"\n");
+            content.append("weekly_combined_5: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_weekly_5%\"\n\n");
+            
+            content.append("# Format 2: Separate (Name and Time)\n");
             content.append("weekly_name_1: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_weekly_name_1%\"\n");
             content.append("weekly_time_1: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_weekly_time_1%\"\n");
             content.append("weekly_name_2: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_weekly_name_2%\"\n");
@@ -354,6 +406,14 @@ public class BOCRacePlugin extends JavaPlugin {
             content.append("# ==========================================\n");
             content.append("# MONTHLY LEADERBOARD PLACEHOLDERS (Current Month)\n");
             content.append("# ==========================================\n");
+            content.append("# Format 1: Combined (PlayerName - Time)\n");
+            content.append("monthly_combined_1: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_monthly_1%\"\n");
+            content.append("monthly_combined_2: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_monthly_2%\"\n");
+            content.append("monthly_combined_3: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_monthly_3%\"\n");
+            content.append("monthly_combined_4: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_monthly_4%\"\n");
+            content.append("monthly_combined_5: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_monthly_5%\"\n\n");
+            
+            content.append("# Format 2: Separate (Name and Time)\n");
             content.append("monthly_name_1: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_monthly_name_1%\"\n");
             content.append("monthly_time_1: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_monthly_time_1%\"\n");
             content.append("monthly_name_2: \"").append("%bocrace_leaderboard_").append(exampleCourse).append("_monthly_name_2%\"\n");
@@ -404,7 +464,8 @@ public class BOCRacePlugin extends JavaPlugin {
             content.append("# ==========================================\n");
             content.append("# INSTRUCTIONS\n");
             content.append("# ==========================================\n");
-            content.append("# 1. Replace ").append(exampleCourse).append(" with your actual course names\n");
+            content.append("# 1. Replace 'CourseName' with your actual course names\n");
+            content.append("#    Example: %bocrace_leaderboard_MyCourse_daily_1%\n");
             content.append("# 2. Copy the placeholder you need (including the % symbols)\n");
             content.append("# 3. Paste into your hologram/plugin configuration\n");
             content.append("# 4. Test with: /bocrace testpapi test <placeholder>\n");

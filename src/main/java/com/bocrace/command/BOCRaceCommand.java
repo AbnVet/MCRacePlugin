@@ -422,12 +422,12 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         String courseName = args[2];
         
         // DEBUG: Log command execution
-        plugin.debugLog("Singleplayer create command - Player: " + sender.getName() + ", Course: " + courseName);
+        plugin.debugSetupLog("Singleplayer create command - Player: " + sender.getName() + ", Course: " + courseName);
         
         // Check if course already exists
         if (plugin.getStorageManager().courseExists(courseName)) {
             sender.sendMessage("§cCourse '" + courseName + "' already exists!");
-            plugin.debugLog("Course creation failed - course already exists: " + courseName);
+            plugin.debugSetupLog("Course creation failed - course already exists: " + courseName);
             return true;
         }
         
@@ -777,7 +777,7 @@ public class BOCRaceCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("§aBoat type set to " + boatTypeName + " for course '" + course.getName() + "'!");
         sender.sendMessage("§7New races will spawn " + boatTypeName + " boats.");
         
-        plugin.debugLog("Boat type set for course " + course.getName() + ": " + boatTypeName);
+        plugin.debugSetupLog("Boat type set for course " + course.getName() + ": " + boatTypeName);
         return true;
     }
     

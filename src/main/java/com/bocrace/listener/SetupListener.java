@@ -89,6 +89,13 @@ public class SetupListener implements Listener {
             return;
         }
         
+        // Check if course is manually closed
+        if (course.isManuallyClosed()) {
+            player.sendMessage("§cCourse '" + course.getName() + "' is currently closed. Please try again later.");
+            plugin.raceDebugLog("❌ Course " + course.getName() + " is manually closed");
+            return;
+        }
+        
         // Check if player already has active race
         if (plugin.getRaceManager().hasActiveRace(player.getUniqueId())) {
             player.sendMessage("§cYou already have an active race!");

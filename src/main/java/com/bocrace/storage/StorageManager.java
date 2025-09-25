@@ -32,7 +32,7 @@ public class StorageManager {
     }
     
     public void loadCourses() {
-        plugin.debugLog("Starting course reload - clearing " + courses.size() + " courses from memory");
+        plugin.debugDataLog("Starting course reload - clearing " + courses.size() + " courses from memory");
         courses.clear();
         
         // Create courses directory structure
@@ -46,38 +46,38 @@ public class StorageManager {
         
         if (courses.isEmpty()) {
             plugin.getLogger().info("No courses found in courses/singleplayer/ or courses/multiplayer/");
-            plugin.debugLog("Course reload complete - 0 courses loaded");
+            plugin.debugDataLog("Course reload complete - 0 courses loaded");
         } else {
             plugin.getLogger().info("Loaded " + courses.size() + " courses");
-            plugin.debugLog("Course reload complete - " + courses.size() + " courses loaded: " + String.join(", ", courses.keySet()));
+            plugin.debugDataLog("Course reload complete - " + courses.size() + " courses loaded: " + String.join(", ", courses.keySet()));
         }
     }
     
     private void createCoursesDirectoryStructure() {
-        plugin.debugLog("Creating courses directory structure...");
+        plugin.debugDataLog("Creating courses directory structure...");
         
         // Create main courses directory
         File coursesDir = new File(plugin.getDataFolder(), "courses");
         if (!coursesDir.exists()) {
             coursesDir.mkdirs();
-            plugin.debugLog("Created courses directory: " + coursesDir.getAbsolutePath());
+            plugin.debugDataLog("Created courses directory: " + coursesDir.getAbsolutePath());
         }
         
         // Create singleplayer courses directory
         File singleplayerCoursesDir = new File(coursesDir, "singleplayer");
         if (!singleplayerCoursesDir.exists()) {
             singleplayerCoursesDir.mkdirs();
-            plugin.debugLog("Created singleplayer courses directory: " + singleplayerCoursesDir.getAbsolutePath());
+            plugin.debugDataLog("Created singleplayer courses directory: " + singleplayerCoursesDir.getAbsolutePath());
         }
         
         // Create multiplayer courses directory
         File multiplayerCoursesDir = new File(coursesDir, "multiplayer");
         if (!multiplayerCoursesDir.exists()) {
             multiplayerCoursesDir.mkdirs();
-            plugin.debugLog("Created multiplayer courses directory: " + multiplayerCoursesDir.getAbsolutePath());
+            plugin.debugDataLog("Created multiplayer courses directory: " + multiplayerCoursesDir.getAbsolutePath());
         }
         
-        plugin.debugLog("Courses directory structure created successfully");
+        plugin.debugDataLog("Courses directory structure created successfully");
     }
     
     private void loadCoursesFromFolder(String folderName, CourseType type) {
@@ -283,7 +283,7 @@ public class StorageManager {
             FileConfiguration config = new YamlConfiguration();
             
             // DEBUG: Log course saving
-            plugin.getLogger().info("[DEBUG] Saving course: " + course.getName() + " (Type: " + course.getType() + ")");
+            plugin.debugDataLog("Saving course: " + course.getName() + " (Type: " + course.getType() + ")");
             
             config.set("name", course.getName());
             config.set("type", course.getType().toString());
@@ -294,7 +294,7 @@ public class StorageManager {
             
             // Save course-specific Location fields
             if (course.getType() == CourseType.SINGLEPLAYER) {
-                plugin.getLogger().info("[DEBUG] Saving singleplayer course - spstartbutton: " + 
+                plugin.debugDataLog("Saving singleplayer course - spstartbutton: " + 
                     (course.getSpstartbutton() != null ? "SET" : "NULL") + 
                     ", spboatspawn: " + (course.getSpboatspawn() != null ? "SET" : "NULL"));
                 
@@ -316,7 +316,7 @@ public class StorageManager {
                 writeLocation(config, "spmainlobby", course.getSpmainlobby());
                 
             } else if (course.getType() == CourseType.MULTIPLAYER) {
-                plugin.getLogger().info("[DEBUG] Saving multiplayer course - buttons: " + 
+                plugin.debugDataLog("Saving multiplayer course - buttons: " + 
                     (course.getMpcreateRaceButton() != null ? "CREATE" : "") + 
                     (course.getMpstartRaceButton() != null ? " START" : "") + 
                     (course.getMpjoinRaceButton() != null ? " JOIN" : "") + 
@@ -384,7 +384,7 @@ public class StorageManager {
             
             config.save(file);
             plugin.getLogger().info("Saved course: " + course.getDisplayName());
-            plugin.getLogger().info("[DEBUG] Course saved to: " + file.getAbsolutePath());
+            plugin.debugDataLog("Course saved to: " + file.getAbsolutePath());
             
         } catch (IOException e) {
             plugin.getLogger().severe("Failed to save course " + course.getName() + ": " + e.getMessage());
@@ -431,15 +431,15 @@ public class StorageManager {
             
             if (file.exists()) {
                 boolean deleted = file.delete();
-                plugin.getLogger().info("[DEBUG] Course file deletion: " + file.getName() + " - " + (deleted ? "SUCCESS" : "FAILED"));
+                plugin.debugDataLog("Course file deletion: " + file.getName() + " - " + (deleted ? "SUCCESS" : "FAILED"));
             } else {
-                plugin.getLogger().warning("[DEBUG] Course file not found for deletion: " + file.getAbsolutePath());
+                plugin.debugDataLog("Course file not found for deletion: " + file.getAbsolutePath());
             }
         }
         
         // Remove from memory
         courses.remove(name);
-        plugin.getLogger().info("[DEBUG] Course removed from memory: " + name);
+        plugin.debugDataLog("Course removed from memory: " + name);
     }
     
     // Helper methods for Location serialization
@@ -463,12 +463,12 @@ public class StorageManager {
     
     private void writeLocation(FileConfiguration config, String path, Location location) {
         if (location == null) {
-            plugin.getLogger().info("[DEBUG] Writing NULL location for: " + path + " - field will not appear in YAML");
+            plugin.debugDataLog("Writing NULL location for: " + path + " - field will not appear in YAML");
             config.set(path, null);
             return;
         }
         
-        plugin.getLogger().info("[DEBUG] Writing location for: " + path + " - World: " + 
+        plugin.debugDataLog("Writing location for: " + path + " - World: " + 
             (location.getWorld() != null ? location.getWorld().getName() : "NULL") + 
             ", X: " + location.getBlockX() + ", Y: " + location.getBlockY() + 
             ", Z: " + location.getBlockZ() + ", Yaw: " + location.getYaw());

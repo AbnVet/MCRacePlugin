@@ -122,6 +122,13 @@ public class ConfigManager {
             configUpdated = true;
         }
         
+        // Add debug-data if missing
+        if (!config.contains("debug-data")) {
+            plugin.getLogger().info("Adding missing debug-data option...");
+            config.set("debug-data", false);
+            configUpdated = true;
+        }
+        
         // Save updated config
         if (configUpdated) {
             try {
@@ -182,6 +189,14 @@ public class ConfigManager {
     
     public boolean isSetupDebugEnabled() {
         return config.getBoolean("debug-setup", false);
+    }
+    
+    public boolean isMultiplayerDebugEnabled() {
+        return config.getBoolean("debug-multiplayer", false);
+    }
+    
+    public boolean isDataDebugEnabled() {
+        return config.getBoolean("debug-data", false);
     }
     
     public String getPrefixColor() {

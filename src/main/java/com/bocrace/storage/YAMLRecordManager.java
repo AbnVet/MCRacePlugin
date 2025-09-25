@@ -56,31 +56,31 @@ public class YAMLRecordManager implements RecordManager {
     }
     
     private void createDirectoryStructure() {
-        plugin.debugLog("Creating CLEAN leaderboard directory structure...");
+        plugin.debugDataLog("Creating CLEAN leaderboard directory structure...");
         
         // Create main directories
         if (!dataDir.exists()) {
             dataDir.mkdirs();
-            plugin.debugLog("Created data directory: " + dataDir.getAbsolutePath());
+            plugin.debugDataLog("Created data directory: " + dataDir.getAbsolutePath());
         }
         if (!singleplayerDir.exists()) {
             singleplayerDir.mkdirs();
-            plugin.debugLog("Created singleplayer directory: " + singleplayerDir.getAbsolutePath());
+            plugin.debugDataLog("Created singleplayer directory: " + singleplayerDir.getAbsolutePath());
         }
         if (!multiplayerDir.exists()) {
             multiplayerDir.mkdirs();
-            plugin.debugLog("Created multiplayer directory: " + multiplayerDir.getAbsolutePath());
+            plugin.debugDataLog("Created multiplayer directory: " + multiplayerDir.getAbsolutePath());
         }
         if (!playersDir.exists()) {
             playersDir.mkdirs();
-            plugin.debugLog("Created players directory: " + playersDir.getAbsolutePath());
+            plugin.debugDataLog("Created players directory: " + playersDir.getAbsolutePath());
         }
         if (!cacheDir.exists()) {
             cacheDir.mkdirs();
-            plugin.debugLog("Created cache directory: " + cacheDir.getAbsolutePath());
+            plugin.debugDataLog("Created cache directory: " + cacheDir.getAbsolutePath());
         }
         
-        plugin.debugLog("CLEAN directory structure created successfully");
+        plugin.debugDataLog("CLEAN directory structure created successfully");
     }
     
     /**
@@ -110,7 +110,7 @@ public class YAMLRecordManager implements RecordManager {
     @Override
     public void saveRaceRecord(String player, String course, double time, CourseType type, LocalDateTime date) {
         try {
-            plugin.debugLog("Saving race record: " + player + " - " + String.format("%.2f", time) + "s on " + course);
+            plugin.debugDataLog("Saving race record: " + player + " - " + String.format("%.2f", time) + "s on " + course);
             
             // 1. Always save to all_records.yml (permanent backup)
             saveToAllRecords(player, course, time, type, date);
@@ -147,7 +147,7 @@ public class YAMLRecordManager implements RecordManager {
             leaderboardCache.remove(cacheKey);
             cacheTimestamps.remove(cacheKey);
             
-            plugin.debugLog("Race record saved successfully to clean structure");
+            plugin.debugDataLog("Race record saved successfully to clean structure");
             
         } catch (IOException e) {
             plugin.getLogger().severe("Failed to save race record: " + e.getMessage());
@@ -177,7 +177,7 @@ public class YAMLRecordManager implements RecordManager {
         config.set("records." + key + ".type", type.name());
         
         config.save(allRecordsFile);
-        plugin.debugLog("Saved to all_records.yml - Record: " + key);
+        plugin.debugDataLog("Saved to all_records.yml - Record: " + key);
     }
     
     /**
@@ -796,6 +796,9 @@ public class YAMLRecordManager implements RecordManager {
             boolean singleplayerReset = resetCourseDirectory(getCourseDirectory(courseName, CourseType.SINGLEPLAYER));
             boolean multiplayerReset = resetCourseDirectory(getCourseDirectory(courseName, CourseType.MULTIPLAYER));
             
+            // Reset course usage statistics
+            resetCourseUsageStats(courseName);
+            
             return singleplayerReset && multiplayerReset;
         } catch (Exception e) {
             plugin.getLogger().warning("Failed to reset course records for " + courseName + ": " + e.getMessage());
@@ -827,6 +830,51 @@ public class YAMLRecordManager implements RecordManager {
         } catch (Exception e) {
             plugin.getLogger().severe("Failed to reset course records: " + e.getMessage());
             return false;
+        }
+    }
+    
+    private void resetCourseUsageStats(String courseName) {
+        try {
+            // Get the course from storage manager
+            Course course = plugin.getStorageManager().getCourse(courseName);
+            if (course != null) {
+                // Reset usage statistics
+                course.setUsageCount(0);
+                course.setLastUsed(null);
+                course.setLastUsedBy(null);
+                course.updateLastEdited();
+                
+                // Save the updated course
+                plugin.getStorageManager().saveCourse(course);
+                
+                plugin.debugLog("Reset usage statistics for course: " + courseName);
+            } else {
+                plugin.getLogger().warning("Course not found for usage stats reset: " + courseName);
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("Failed to reset usage statistics for course " + courseName + ": " + e.getMessage());
+        }
+    }
+    
+    private void resetAllCourseUsageStats() {
+        try {
+            // Get all courses from storage manager
+            List<Course> allCourses = plugin.getStorageManager().getAllCourses();
+            
+            for (Course course : allCourses) {
+                // Reset usage statistics for each course
+                course.setUsageCount(0);
+                course.setLastUsed(null);
+                course.setLastUsedBy(null);
+                course.updateLastEdited();
+                
+                // Save the updated course
+                plugin.getStorageManager().saveCourse(course);
+            }
+            
+            plugin.debugLog("Reset usage statistics for all courses (" + allCourses.size() + " courses)");
+        } catch (Exception e) {
+            plugin.getLogger().warning("Failed to reset usage statistics for all courses: " + e.getMessage());
         }
     }
     
@@ -897,6 +945,9 @@ public class YAMLRecordManager implements RecordManager {
             // Clear cache
             leaderboardCache.clear();
             cacheTimestamps.clear();
+            
+            // Reset usage statistics for all courses
+            resetAllCourseUsageStats();
             
             plugin.debugLog("Reset ALL race records");
             return true;
