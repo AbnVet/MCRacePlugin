@@ -57,11 +57,12 @@ colors:
   prefix: GOLD
   broadcast: AQUA
 
-# Debug modes
-debug: false
-debug-race: false         # Specific debug for race mechanics (button clicks, line detection, etc.)
-debug-setup: false        # Specific debug for course setup commands
-debug-multiplayer: false  # Specific debug for multiplayer race system (buttons, sessions, etc.)
+# Debug modes - Enable specific debug categories for troubleshooting
+debug: false              # Legacy debug mode (controls everything - use specific categories below)
+debug-data: false         # Data storage, leaderboards, records, PlaceholderAPI operations
+debug-race: false         # Race mechanics, button clicks, line detection, boat spawning
+debug-setup: false        # Course setup commands, location saving, course creation
+debug-multiplayer: false  # Multiplayer race system, sessions, button interactions
 
 # Message customization
 messages:
