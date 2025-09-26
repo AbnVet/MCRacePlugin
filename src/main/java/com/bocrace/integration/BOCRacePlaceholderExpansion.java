@@ -441,7 +441,7 @@ public class BOCRacePlaceholderExpansion extends PlaceholderExpansion {
                         }
                         return record.getPlayer();
                     } else if ("time".equals(type)) {
-                        String formattedTime = formatTime((long)(record.getTime() * 1000));
+                        String formattedTime = formatTime((long)(record.getTime() * 1000), courseName);
                         if (plugin.getConfigManager().isDebugEnabled()) {
                             plugin.getLogger().info("[DEBUG] Returning formatted time: " + formattedTime);
                         }
@@ -489,7 +489,7 @@ public class BOCRacePlaceholderExpansion extends PlaceholderExpansion {
                 
                 if (pos > 0 && pos <= leaderboard.size()) {
                     RaceRecord record = leaderboard.get(pos - 1);
-                    String result = record.getPlayer() + " - " + formatTime((long)(record.getTime() * 1000));
+                    String result = record.getPlayer() + " - " + formatTime((long)(record.getTime() * 1000), courseName);
                     if (plugin.getConfigManager().isDebugEnabled()) {
                         plugin.getLogger().info("[DEBUG] Returning combined result: " + result);
                     }
@@ -556,7 +556,7 @@ public class BOCRacePlaceholderExpansion extends PlaceholderExpansion {
                 
                 if (pos > 0 && pos <= leaderboard.size()) {
                     RaceRecord record = leaderboard.get(pos - 1);
-                    String result = record.getPlayer() + " - " + formatTime((long)(record.getTime() * 1000));
+                    String result = record.getPlayer() + " - " + formatTime((long)(record.getTime() * 1000), courseName);
                     if (plugin.getConfigManager().isDebugEnabled()) {
                         plugin.getLogger().info("[DEBUG] Returning combined result: " + result);
                     }
@@ -596,7 +596,7 @@ public class BOCRacePlaceholderExpansion extends PlaceholderExpansion {
                                 }
                                 return record.getPlayer();
                             } else if ("time".equals(type)) {
-                                String formattedTime = formatTime((long)(record.getTime() * 1000));
+                                String formattedTime = formatTime((long)(record.getTime() * 1000), courseName);
                                 if (plugin.getConfigManager().isDebugEnabled()) {
                                     plugin.getLogger().info("[DEBUG] Returning formatted time: " + formattedTime);
                                 }
@@ -842,6 +842,50 @@ public class BOCRacePlaceholderExpansion extends PlaceholderExpansion {
         } else {
             // For times under 1 minute, show 2 decimal places
             return String.format("%d.%02d", seconds, milliseconds / 10);
+        }
+    }
+    
+    private String formatTime(long timeMs, String courseName) {
+        if (timeMs <= 0) return "0.00";
+        
+        // Get course precision setting
+        Course course = plugin.getStorageManager().getCourse(courseName);
+        String precision = course != null ? course.getTimePrecision() : "short";
+        
+        // Debug logging
+        if (plugin.getConfigManager().isDataDebugEnabled()) {
+            plugin.getLogger().info("[DEBUG-DATA] Formatting time for course: " + courseName + 
+                ", precision: " + precision + ", timeMs: " + timeMs);
+        }
+        
+        long minutes = timeMs / 60000;
+        long seconds = (timeMs % 60000) / 1000;
+        long milliseconds = timeMs % 1000;
+        
+        if (minutes > 0) {
+            // For times over 1 minute, format based on precision
+            switch (precision) {
+                case "short":
+                    return String.format("%d:%02d", minutes, seconds);
+                case "medium":
+                    return String.format("%d:%02d.%01d", minutes, seconds, milliseconds / 100);
+                case "long":
+                    return String.format("%d:%02d.%02d", minutes, seconds, milliseconds / 10);
+                default:
+                    return String.format("%d:%02d", minutes, seconds);
+            }
+        } else {
+            // For times under 1 minute, format based on precision
+            switch (precision) {
+                case "short":
+                    return String.format("%d.%02d", seconds, milliseconds / 10);
+                case "medium":
+                    return String.format("%d.%03d", seconds, milliseconds);
+                case "long":
+                    return String.format("%d.%03d", seconds, milliseconds);
+                default:
+                    return String.format("%d.%02d", seconds, milliseconds / 10);
+            }
         }
     }
     

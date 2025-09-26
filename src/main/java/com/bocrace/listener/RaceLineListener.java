@@ -14,8 +14,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.Particle;
-import org.bukkit.Sound;
 import org.bukkit.entity.Boat;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -81,7 +79,7 @@ public class RaceLineListener implements Listener {
             if (race.getState() == ActiveRace.State.ARMED) {
                 handleStartLineDetection(boat, race, course, from, to);
             } else if (race.getState() == ActiveRace.State.RUNNING) {
-                handleFinishLineDetection(boat, race, course, to);
+                handleFinishLineDetection(boat, race, course, from, to);
                 updateRaceTimer(boat, race);
             }
             return;
@@ -111,7 +109,7 @@ public class RaceLineListener implements Listener {
             // Handle multiplayer race states
             if (mpRace.getState() == MultiplayerRace.State.RUNNING) {
                 handleMultiplayerStartLineDetection(boat, mpRace, course, player, from, to);
-                handleMultiplayerFinishLineDetection(boat, mpRace, course, player, to);
+                handleMultiplayerFinishLineDetection(boat, mpRace, course, player, from, to);
                 updateMultiplayerRaceTimer(boat, mpRace, player);
             }
             return;
@@ -167,29 +165,31 @@ public class RaceLineListener implements Listener {
     }
     
     /**
-     * Handle finish line detection (forgiving cuboid)
+     * Handle finish line detection (proper crossing detection)
      */
-    private void handleFinishLineDetection(Boat boat, ActiveRace race, Course course, Location boatLocation) {
+    private void handleFinishLineDetection(Boat boat, ActiveRace race, Course course, Location from, Location to) {
         if (course.getSpfinish1() == null || course.getSpfinish2() == null) {
             plugin.raceDebugLog("Finish line detection skipped - finish line not configured");
             return;
         }
         
-        plugin.raceDebugLog("Checking finish line entry - Finish1: " + formatLocation(course.getSpfinish1()) + 
+        plugin.raceDebugLog("Checking finish line crossing - Finish1: " + formatLocation(course.getSpfinish1()) + 
                            ", Finish2: " + formatLocation(course.getSpfinish2()) + 
-                           ", Boat at: " + formatLocation(boatLocation));
+                           ", From: " + formatLocation(from) + 
+                           ", To: " + formatLocation(to));
         
         // Add detailed zone debug info
-        plugin.raceDebugLog(LineDetection.getFinishZoneDescription(boatLocation, course.getSpfinish1(), course.getSpfinish2()));
+        plugin.raceDebugLog(LineDetection.getFinishZoneDescription(to, course.getSpfinish1(), course.getSpfinish2()));
         
-        boolean enteredFinish = LineDetection.enteredFinishZone(boatLocation, course.getSpfinish1(), course.getSpfinish2());
+        boolean crossedFinish = LineDetection.crossedFinishLine(from, to, course.getSpfinish1(), course.getSpfinish2());
         
-        plugin.raceDebugLog("Finish line check result: " + enteredFinish);
+        plugin.raceDebugLog("Finish line crossing check result: " + crossedFinish);
         
-        if (enteredFinish) {
-            plugin.raceDebugLog("🏆 FINISH LINE ENTERED! - Player: " + race.getPlayerName() + 
+        if (crossedFinish) {
+            plugin.raceDebugLog("🏆 FINISH LINE CROSSED! - Player: " + race.getPlayerName() + 
                                ", Course: " + course.getName() + 
-                               ", Location: " + formatLocation(boatLocation));
+                               ", From: " + formatLocation(from) + 
+                               ", To: " + formatLocation(to));
             
             // Complete the race
             completeRace(boat, race, course);
@@ -338,17 +338,17 @@ public class RaceLineListener implements Listener {
     /**
      * Handle multiplayer finish line detection
      */
-    private void handleMultiplayerFinishLineDetection(Boat boat, MultiplayerRace race, Course course, Player player, Location boatLocation) {
+    private void handleMultiplayerFinishLineDetection(Boat boat, MultiplayerRace race, Course course, Player player, Location from, Location to) {
         // Check if player has finished already
         MultiplayerRace.PlayerResult result = race.getPlayers().get(player.getUniqueId());
         if (result == null || result.isFinished() || result.isDisqualified()) {
             return;
         }
         
-        // Check if entered finish zone
-        boolean enteredFinish = LineDetection.enteredFinishZone(boatLocation, course.getSpfinish1(), course.getSpfinish2());
-        if (enteredFinish) {
-            plugin.raceDebugLog("🏆 Multiplayer finish line reached by " + player.getName());
+        // Check if crossed finish zone
+        boolean crossedFinish = LineDetection.crossedFinishLine(from, to, course.getSpfinish1(), course.getSpfinish2());
+        if (crossedFinish) {
+            plugin.raceDebugLog("🏆 Multiplayer finish line crossed by " + player.getName());
             
             // Finish the player through race manager
             plugin.getMultiplayerRaceManager().finishPlayer(player.getUniqueId());

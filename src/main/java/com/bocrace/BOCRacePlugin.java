@@ -455,10 +455,25 @@ public class BOCRacePlugin extends JavaPlugin {
             content.append("# §7 = Gray (secondary text)\n\n");
             
             content.append("# ==========================================\n");
-            content.append("# TIME FORMATTING\n");
+            content.append("# TIME FORMATTING & PRECISION\n");
             content.append("# ==========================================\n");
-            content.append("# Under 1 minute: 12.80 (2 decimal places)\n");
-            content.append("# Over 1 minute: 1:35 (MM:SS format, no decimals)\n");
+            content.append("# Time format is controlled by course 'time-precision' setting:\n");
+            content.append("# \n");
+            content.append("# SHORT (default):\n");
+            content.append("#   Under 1 minute: 12.80 (2 decimal places)\n");
+            content.append("#   Over 1 minute: 1:35 (MM:SS format, no decimals)\n");
+            content.append("# \n");
+            content.append("# MEDIUM:\n");
+            content.append("#   Under 1 minute: 12.800 (3 decimal places)\n");
+            content.append("#   Over 1 minute: 1:35.1 (MM:SS.S format)\n");
+            content.append("# \n");
+            content.append("# LONG:\n");
+            content.append("#   Under 1 minute: 12.800 (3 decimal places)\n");
+            content.append("#   Over 1 minute: 1:35.12 (MM:SS.SS format)\n");
+            content.append("# \n");
+            content.append("# To change precision, edit course YAML file:\n");
+            content.append("#   time-precision: \"short\"   # or \"medium\" or \"long\"\n");
+            content.append("# \n");
             content.append("# No data: N/A\n\n");
             
             content.append("# ==========================================\n");

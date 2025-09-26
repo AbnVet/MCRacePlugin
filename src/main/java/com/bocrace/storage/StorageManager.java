@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -250,6 +251,11 @@ public class StorageManager {
         if (config.contains("leaderboards.reset-monthly")) {
             course.setResetMonthly(config.getBoolean("leaderboards.reset-monthly"));
         }
+        
+        // Load time precision setting with default
+        if (config.contains("time-precision")) {
+            course.setTimePrecision(config.getString("time-precision"));
+        }
         if (config.contains("custom-messages") && config.isConfigurationSection("custom-messages")) {
             Map<String, String> customMessages = new HashMap<>();
             ConfigurationSection messagesSection = config.getConfigurationSection("custom-messages");
@@ -281,6 +287,22 @@ public class StorageManager {
             
             File file = new File(folder, course.getName() + ".yml");
             FileConfiguration config = new YamlConfiguration();
+            
+            // Add header comments to the config file
+            config.setComments("", Arrays.asList(
+                "# BOCRacePlugin Course Configuration",
+                "# Edit these settings to customize your course",
+                "",
+                "# Time Precision Options:",
+                "#   short: 14.51 (seconds), 1:35 (minutes) - Default format",
+                "#   medium: 14.512 (seconds), 1:35.1 (minutes) - 1 extra decimal", 
+                "#   long: 14.5123 (seconds), 1:35.12 (minutes) - 2 extra decimals",
+                "",
+                "# Leaderboard Options:",
+                "#   daily/weekly/monthly: Enable/disable period-based leaderboards",
+                "#   reset-daily/weekly/monthly: Auto-reset leaderboards on schedule",
+                ""
+            ));
             
             // DEBUG: Log course saving
             plugin.debugDataLog("Saving course: " + course.getName() + " (Type: " + course.getType() + ")");
@@ -363,13 +385,19 @@ public class StorageManager {
             }
             config.set("manually-closed", course.isManuallyClosed());
             
-            // Save leaderboard configuration
-            config.set("leaderboards.daily", course.isDailyLeaderboard());
-            config.set("leaderboards.weekly", course.isWeeklyLeaderboard());
-            config.set("leaderboards.monthly", course.isMonthlyLeaderboard());
-            config.set("leaderboards.reset-daily", course.isResetDaily());
-            config.set("leaderboards.reset-weekly", course.isResetWeekly());
-            config.set("leaderboards.reset-monthly", course.isResetMonthly());
+            // Leaderboard configuration
+            config.set("leaderboards.daily", course.isDailyLeaderboard());        // Enable/disable daily leaderboards
+            config.set("leaderboards.weekly", course.isWeeklyLeaderboard());      // Enable/disable weekly leaderboards  
+            config.set("leaderboards.monthly", course.isMonthlyLeaderboard());    // Enable/disable monthly leaderboards
+            config.set("leaderboards.reset-daily", course.isResetDaily());        // Auto-reset daily leaderboards
+            config.set("leaderboards.reset-weekly", course.isResetWeekly());      // Auto-reset weekly leaderboards
+            config.set("leaderboards.reset-monthly", course.isResetMonthly());    // Auto-reset monthly leaderboards
+            
+            // Time display precision (short, medium, long)
+            // short: 14.51 (seconds), 1:35 (minutes) - Default format
+            // medium: 14.512 (seconds), 1:35.1 (minutes) - 1 extra decimal
+            // long: 14.5123 (seconds), 1:35.12 (minutes) - 2 extra decimals
+            config.set("time-precision", course.getTimePrecision());
             
             if (course.getCustomMessages() != null && !course.getCustomMessages().isEmpty()) {
                 for (Map.Entry<String, String> entry : course.getCustomMessages().entrySet()) {

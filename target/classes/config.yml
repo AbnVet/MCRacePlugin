@@ -64,6 +64,11 @@ debug-race: false         # Race mechanics, button clicks, line detection, boat 
 debug-setup: false        # Course setup commands, location saving, course creation
 debug-multiplayer: false  # Multiplayer race system, sessions, button interactions
 
+# Time precision examples for course configuration:
+# time-precision: "short"   # 14.51 (seconds), 1:35 (minutes) - Default format
+# time-precision: "medium"  # 14.512 (seconds), 1:35.1 (minutes) - 1 extra decimal
+# time-precision: "long"    # 14.5123 (seconds), 1:35.12 (minutes) - 2 extra decimals
+
 # Message customization
 messages:
   race-start: "§a§l🏁 RACE STARTED! §a§lGO GO GO!"

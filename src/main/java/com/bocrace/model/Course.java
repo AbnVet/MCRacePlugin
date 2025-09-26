@@ -66,6 +66,9 @@ public class Course {
     private boolean resetWeekly = true;         // Default: true (reset every 7 days)
     private boolean resetMonthly = true;        // Default: true (reset every month)
     
+    // Time display precision (short, medium, long)
+    private String timePrecision = "short";     // Default: short (14.51, 1:35)
+    
     
     // Default constructor
     public Course() {
@@ -368,6 +371,15 @@ public class Course {
     
     public void setResetMonthly(boolean resetMonthly) {
         this.resetMonthly = resetMonthly;
+        this.lastEdited = LocalDateTime.now();
+    }
+    
+    public String getTimePrecision() {
+        return timePrecision;
+    }
+    
+    public void setTimePrecision(String timePrecision) {
+        this.timePrecision = timePrecision;
         this.lastEdited = LocalDateTime.now();
     }
 }

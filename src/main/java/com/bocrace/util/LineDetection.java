@@ -23,27 +23,51 @@ public class LineDetection {
     }
     
     /**
-     * Check if a boat entered a forgiving cuboid (finish line)
-     * Creates a 3-4 block wide detection zone
+     * Check if a boat CROSSED the finish line zone (proper crossing detection)
+     * Creates a 3x3 detection zone with minimal expansion
+     */
+    public static boolean crossedFinishLine(Location from, Location to, Location point1, Location point2) {
+        if (from == null || to == null || point1 == null || point2 == null) return false;
+        if (!from.getWorld().equals(to.getWorld()) || !from.getWorld().equals(point1.getWorld())) return false;
+        
+        // Check if player CROSSED the finish zone (wasn't inside, now is inside)
+        boolean wasInside = insideFinishZone(from, point1, point2);
+        boolean nowInside = insideFinishZone(to, point1, point2);
+        
+        return !wasInside && nowInside;
+    }
+    
+    /**
+     * Check if a boat entered a forgiving cuboid (finish line) - LEGACY METHOD
+     * Creates a 3x3 detection zone with minimal expansion
      */
     public static boolean enteredFinishZone(Location boatLocation, Location point1, Location point2) {
         if (boatLocation == null || point1 == null || point2 == null) return false;
         if (!boatLocation.getWorld().equals(point1.getWorld())) return false;
         
-        // Create expanded cuboid bounds
-        double minX = Math.min(point1.getX(), point2.getX()) - 1.5; // 1.5 block expansion
-        double maxX = Math.max(point1.getX(), point2.getX()) + 1.5;
-        double minZ = Math.min(point1.getZ(), point2.getZ()) - 1.5;
-        double maxZ = Math.max(point1.getZ(), point2.getZ()) + 1.5;
+        return insideFinishZone(boatLocation, point1, point2);
+    }
+    
+    /**
+     * Check if boat is inside the finish zone
+     */
+    private static boolean insideFinishZone(Location loc, Location point1, Location point2) {
+        if (loc == null || point1 == null || point2 == null) return false;
         
-        // Y range - allow 3 blocks up and 1 block down from the line points
+        // Create minimal expanded cuboid bounds (0.5 block expansion for 3x3 area)
+        double minX = Math.min(point1.getX(), point2.getX()) - 0.5; // Reduced from 1.5 to 0.5
+        double maxX = Math.max(point1.getX(), point2.getX()) + 0.5;
+        double minZ = Math.min(point1.getZ(), point2.getZ()) - 0.5;
+        double maxZ = Math.max(point1.getZ(), point2.getZ()) + 0.5;
+        
+        // Y range - allow 2 blocks up and 1 block down from the line points
         double minY = Math.min(point1.getY(), point2.getY()) - 1.0;
-        double maxY = Math.max(point1.getY(), point2.getY()) + 3.0;
+        double maxY = Math.max(point1.getY(), point2.getY()) + 2.0; // Reduced from 3.0 to 2.0
         
         // Check if boat is within the expanded cuboid
-        double bx = boatLocation.getX();
-        double by = boatLocation.getY();
-        double bz = boatLocation.getZ();
+        double bx = loc.getX();
+        double by = loc.getY();
+        double bz = loc.getZ();
         
         boolean inZone = (bx >= minX && bx <= maxX) && 
                         (by >= minY && by <= maxY) && 
@@ -124,12 +148,12 @@ public class LineDetection {
     public static String getFinishZoneDescription(Location boatLocation, Location point1, Location point2) {
         if (boatLocation == null || point1 == null || point2 == null) return "FINISH ZONE: Invalid locations";
         
-        double minX = Math.min(point1.getX(), point2.getX()) - 1.5;
-        double maxX = Math.max(point1.getX(), point2.getX()) + 1.5;
-        double minZ = Math.min(point1.getZ(), point2.getZ()) - 1.5;
-        double maxZ = Math.max(point1.getZ(), point2.getZ()) + 1.5;
+        double minX = Math.min(point1.getX(), point2.getX()) - 0.5;
+        double maxX = Math.max(point1.getX(), point2.getX()) + 0.5;
+        double minZ = Math.min(point1.getZ(), point2.getZ()) - 0.5;
+        double maxZ = Math.max(point1.getZ(), point2.getZ()) + 0.5;
         double minY = Math.min(point1.getY(), point2.getY()) - 1.0;
-        double maxY = Math.max(point1.getY(), point2.getY()) + 3.0;
+        double maxY = Math.max(point1.getY(), point2.getY()) + 2.0;
         
         return String.format("FINISH ZONE: X[%.1f to %.1f], Y[%.1f to %.1f], Z[%.1f to %.1f] | Boat at: (%.1f,%.1f,%.1f)",
                 minX, maxX, minY, maxY, minZ, maxZ, 
