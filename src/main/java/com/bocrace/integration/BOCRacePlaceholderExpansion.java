@@ -393,7 +393,7 @@ public class BOCRacePlaceholderExpansion extends PlaceholderExpansion {
             org.bukkit.entity.Player player = org.bukkit.Bukkit.getPlayer(playerUuid);
             if (player != null) {
                 RaceRecord pb = plugin.getRecordManager().getPlayerBestTime(player.getName(), courseName);
-                return pb != null ? formatTime((long)(pb.getTime() * 1000)) : "No PB";
+                return pb != null ? formatTime((long)(pb.getTime() * 1000), courseName) : "No PB";
             }
             return "No PB";
         } catch (Exception e) {

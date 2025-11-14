@@ -38,6 +38,24 @@ public class LineDetection {
     }
     
     /**
+     * Hybrid finish line detection - prevents bleeding while allowing puzzle courses
+     * Combines crossing detection (normal racing) with direct entry (puzzle courses)
+     */
+    public static boolean shouldTriggerFinish(Location from, Location to, Location point1, Location point2) {
+        if (from == null || to == null || point1 == null || point2 == null) return false;
+        if (!from.getWorld().equals(to.getWorld()) || !from.getWorld().equals(point1.getWorld())) return false;
+        
+        // Primary: Crossing detection (prevents bleeding, works for normal racing)
+        boolean crossed = crossedFinishLine(from, to, point1, point2);
+        
+        // Fallback: Direct entry but only if boat is well inside zone (prevents edge-triggering)
+        boolean directEntry = enteredFinishZone(to, point1, point2) && 
+                             isWellInsideZone(to, point1, point2);
+        
+        return crossed || directEntry;
+    }
+    
+    /**
      * Check if a boat entered a forgiving cuboid (finish line) - LEGACY METHOD
      * Creates a 3x3 detection zone with minimal expansion
      */
@@ -74,6 +92,41 @@ public class LineDetection {
                         (bz >= minZ && bz <= maxZ);
         
         return inZone;
+    }
+    
+    /**
+     * Check if boat is well inside the finish zone (prevents edge-triggering)
+     * Only triggers if boat is at least 0.3 blocks inside the actual 3x3 area
+     */
+    private static boolean isWellInsideZone(Location loc, Location point1, Location point2) {
+        if (loc == null || point1 == null || point2 == null) return false;
+        
+        // Get the actual 3x3 area bounds (no expansion)
+        double actualMinX = Math.min(point1.getX(), point2.getX());
+        double actualMaxX = Math.max(point1.getX(), point2.getX()) + 1.0; // Include block width
+        double actualMinZ = Math.min(point1.getZ(), point2.getZ());
+        double actualMaxZ = Math.max(point1.getZ(), point2.getZ()) + 1.0;
+        
+        // Create a smaller "well inside" zone (0.3 blocks inside the actual area)
+        double wellInsideMinX = actualMinX + 0.3;
+        double wellInsideMaxX = actualMaxX - 0.3;
+        double wellInsideMinZ = actualMinZ + 0.3;
+        double wellInsideMaxZ = actualMaxZ - 0.3;
+        
+        // Y range - same as normal zone
+        double minY = Math.min(point1.getY(), point2.getY()) - 1.0;
+        double maxY = Math.max(point1.getY(), point2.getY()) + 2.0;
+        
+        // Check if boat is within the "well inside" zone
+        double bx = loc.getX();
+        double by = loc.getY();
+        double bz = loc.getZ();
+        
+        boolean wellInside = (bx >= wellInsideMinX && bx <= wellInsideMaxX) && 
+                           (by >= minY && by <= maxY) && 
+                           (bz >= wellInsideMinZ && bz <= wellInsideMaxZ);
+        
+        return wellInside;
     }
     
     /**

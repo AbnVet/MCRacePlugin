@@ -181,11 +181,11 @@ public class RaceLineListener implements Listener {
         // Add detailed zone debug info
         plugin.raceDebugLog(LineDetection.getFinishZoneDescription(to, course.getSpfinish1(), course.getSpfinish2()));
         
-        boolean crossedFinish = LineDetection.crossedFinishLine(from, to, course.getSpfinish1(), course.getSpfinish2());
+        boolean shouldTrigger = LineDetection.shouldTriggerFinish(from, to, course.getSpfinish1(), course.getSpfinish2());
         
-        plugin.raceDebugLog("Finish line crossing check result: " + crossedFinish);
+        plugin.raceDebugLog("Finish line hybrid detection result: " + shouldTrigger);
         
-        if (crossedFinish) {
+        if (shouldTrigger) {
             plugin.raceDebugLog("🏆 FINISH LINE CROSSED! - Player: " + race.getPlayerName() + 
                                ", Course: " + course.getName() + 
                                ", From: " + formatLocation(from) + 
@@ -345,9 +345,9 @@ public class RaceLineListener implements Listener {
             return;
         }
         
-        // Check if crossed finish zone
-        boolean crossedFinish = LineDetection.crossedFinishLine(from, to, course.getSpfinish1(), course.getSpfinish2());
-        if (crossedFinish) {
+        // Check if should trigger finish (hybrid detection)
+        boolean shouldTrigger = LineDetection.shouldTriggerFinish(from, to, course.getSpfinish1(), course.getSpfinish2());
+        if (shouldTrigger) {
             plugin.raceDebugLog("🏆 Multiplayer finish line crossed by " + player.getName());
             
             // Finish the player through race manager

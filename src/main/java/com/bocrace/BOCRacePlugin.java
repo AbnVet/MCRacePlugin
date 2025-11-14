@@ -343,6 +343,17 @@ public class BOCRacePlugin extends JavaPlugin {
             content.append("course_usage_count: \"").append("%bocrace_course_").append(exampleCourse).append("_usage%\"\n\n");
             
             content.append("# ==========================================\n");
+            content.append("# PERSONAL BEST PLACEHOLDERS (Player-Specific)\n");
+            content.append("# ==========================================\n");
+            content.append("personal_best_time: \"").append("%bocrace_player_pb_").append(exampleCourse).append("%\"\n");
+            content.append("# Returns: Formatted time (respects course time-precision setting)\n");
+            content.append("# Examples:\n");
+            content.append("#   Short precision: \"14.51\" (seconds), \"1:35\" (minutes)\n");
+            content.append("#   Medium precision: \"14.512\" (seconds), \"1:35.1\" (minutes)\n");
+            content.append("#   Long precision: \"14.5123\" (seconds), \"1:35.12\" (minutes)\n");
+            content.append("#   No PB: \"No PB\"\n\n");
+            
+            content.append("# ==========================================\n");
             content.append("# PLACEHOLDER FORMATS EXPLAINED\n");
             content.append("# ==========================================\n");
             content.append("# Format 1 (Combined): %bocrace_leaderboard_<course>_<period>_<position>%\n");

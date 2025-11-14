@@ -1,0 +1,35 @@
+# Maven build artifacts
+target/
+*.jar
+*.class
+*.war
+*.ear
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.classpath
+.project
+.settings/
+bin/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+
+# Maven wrapper (if not using)
+.mvn/wrapper/maven-wrapper.jar
+

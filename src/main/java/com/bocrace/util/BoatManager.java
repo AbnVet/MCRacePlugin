@@ -38,7 +38,9 @@ public class BoatManager {
         boatSpawn.setX(spawnLocation.getBlockX() + 0.5); // Center X
         boatSpawn.setZ(spawnLocation.getBlockZ() + 0.5); // Center Z
         boatSpawn.add(0, 1.0, 0); // Add Y offset
-        // Keep original yaw/pitch from setup (FIXED - was missing for multiplayer)
+        // Keep original yaw/pitch from setup (FIXED - now actually using stored values)
+        boatSpawn.setYaw(spawnLocation.getYaw());
+        boatSpawn.setPitch(spawnLocation.getPitch());
         
         plugin.debugLog("Spawning multiplayer race boat for " + player.getName() + " at " + 
                        boatSpawn.getWorld().getName() + " " + 
@@ -75,7 +77,9 @@ public class BoatManager {
         boatSpawn.setX(spawnLocation.getBlockX() + 0.5); // Center X
         boatSpawn.setZ(spawnLocation.getBlockZ() + 0.5); // Center Z
         boatSpawn.add(0, 1.0, 0); // Add Y offset
-        // Keep original yaw/pitch from setup
+        // Keep original yaw/pitch from setup (FIXED - now actually using stored values)
+        boatSpawn.setYaw(spawnLocation.getYaw());
+        boatSpawn.setPitch(spawnLocation.getPitch());
         
         plugin.debugLog("Spawning race boat for " + player.getName() + " at " + 
                        boatSpawn.getWorld().getName() + " " + 
